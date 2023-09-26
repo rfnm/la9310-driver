@@ -66,17 +66,25 @@ la9310_show_ep_log(struct device *dev,
 	struct la9310_dev *la9310_dev;
 	struct la9310_ep_log *ep_log;
 	int log_len, i;
+	dma_addr_t dma_addr;
 
 	la9310_dev = dev_get_drvdata(dev);
 	ep_log = &la9310_dev->ep_log;
 	log_len = 0;
 
 	dev_info(la9310_dev->dev,
-		 "LA9310 log buf dump, vaddr %p, offset %d\n", ep_log->buf,
+		 "LA9310 log buf dump, vaddr %px, offset %d\n", ep_log->buf,
 		 ep_log->offset);
-	pci_map_single(la9310_dev->pdev, ep_log->buf, ep_log->len,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+        dma_addr=dma_map_page_attrs(&la9310_dev->pdev->dev,
+                        virt_to_page(ep_log->buf),
+                        offset_in_page(ep_log->buf), ep_log->len,
+                        (enum dma_data_direction)PCI_DMA_TODEVICE, 0);
+	 dev_info(la9310_dev->dev,"### dep_log->buf %px dma_addr %px\n",ep_log->buf, (void*)dma_addr);
+#else
+  	pci_map_single(la9310_dev->pdev, ep_log->buf, ep_log->len,
 		       PCI_DMA_FROMDEVICE);
-
+#endif
 	log_len = la9310_collect_ep_log(ep_log, buf);
 	if (log_len == 0) {
 		for (i = 0; i < ep_log->len; i++) {

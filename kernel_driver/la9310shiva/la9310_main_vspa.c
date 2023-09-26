@@ -213,6 +213,8 @@ vspa_mem_initialization(struct vspa_device *vspadev)
 	uint32_t axi_align;
 	struct vspa_dma_req z_dma_req;
 	struct la9310_mem_region_info *vspa_dma_region = NULL;
+        dma_addr_t dma_addr;
+
 
 	mem_addr = kzalloc(sizeof(uint32_t) * MAX_DMA_TRANSFER, GFP_KERNEL);
 	if (!mem_addr)
@@ -275,10 +277,12 @@ vspa_mem_initialization(struct vspa_device *vspadev)
 			       (const void *) mem_addr, z_dma_req.byte_cnt);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-			dma_map_page_attrs(&vspadev->pdev->dev,
+			 dma_addr=dma_map_page_attrs(&vspadev->pdev->dev,
 				virt_to_page(vspa_dma_region->vaddr),
 				offset_in_page(vspa_dma_region->vaddr), z_dma_req.byte_cnt,
 				(enum dma_data_direction)PCI_DMA_TODEVICE, 0);
+			 dev_info(vspadev->dev,"### vspa_dma_region->vaddr %px dma_addr %px\n",
+					 vspa_dma_region->vaddr,(void*)dma_addr);
 #else
 			pci_map_single(vspadev->pdev, vspa_dma_region->vaddr,
 				z_dma_req.byte_cnt, PCI_DMA_TODEVICE);
@@ -454,6 +458,24 @@ get_lma(uint8_t *file_start, uint32_t pg_hd_off,
 	return -LIBVSPA_ERR_INVALID_FILE;
 }
 
+int _strncmp( const char * s1, const char * s2, size_t n )
+{
+    while ( n && *s1 && ( *s1 == *s2 ) )
+    {
+        ++s1;
+        ++s2;
+        --n;
+    }
+    if ( n == 0 )
+    {
+        return 0;
+    }
+    else
+    {
+        return ( *(unsigned char *)s1 - *(unsigned char *)s2 );
+    }
+}
+
 static char *
 get_overlay_section(uint8_t *string_table, int sec_name_offset)
 {
@@ -462,11 +484,21 @@ get_overlay_section(uint8_t *string_table, int sec_name_offset)
 	if (!string_table)
 		return NULL;
 
+	//printk("get_overlay_section: %p %d\n", string_table, sec_name_offset);
+
 	for (i = 0; i < MAX_OVERLAY_SECTIONS; i++) {
 		len = strlen(overlay_sec_info[i].sec_name);
-		if (!strncmp((char *) (string_table + sec_name_offset),
-			     overlay_sec_info[i].sec_name, len))
-			return overlay_sec_info[i].sec_name;
+
+		//printk("%p vs %p %d and %s ; len %d \n", (char *) (string_table + sec_name_offset), overlay_sec_info[i].sec_name, i, overlay_sec_info[i].sec_name, len);
+		//printk("running strcmp with %s %s %d params\n", (char *) (string_table + sec_name_offset), overlay_sec_info[i].sec_name, len);
+
+		if (!_strncmp((char *) (string_table + sec_name_offset),
+			    overlay_sec_info[i].sec_name, len)) {
+				//printk("strcmp succeeded\n");
+				return overlay_sec_info[i].sec_name;
+			}
+
+		//printk("after strcmp\n");
 	}
 	return NULL;
 }
@@ -482,7 +514,7 @@ getsectiontype(uint8_t *string_table, int sec_name_offset)
 	len = strlen(vspa_sec_info[i].sec_name);
 
 	for (i = 0; i < MAX_VSP_SECTION; i++) {
-		if (!strncmp((char *) (string_table + sec_name_offset),
+		if (!_strncmp((char *) (string_table + sec_name_offset),
 			     vspa_sec_info[i].sec_name, len))
 			return i;
 	}
@@ -501,6 +533,8 @@ vspa_fw_dma_write(struct la9310_dev *la9310_dev, struct dma_param *linfo,
 	struct la9310_mem_region_info *vspa_dma_region;
 	struct vspa_device *vspadev =
 		(struct vspa_device *) la9310_dev->vspa_priv;
+        dma_addr_t dma_addr;
+
 
 	dev_dbg(la9310_dev->dev, "INFO: %s :DMA_write: mode = %x from = %0llx \
 			to = %06x total %06x bytes\n", __func__,
@@ -541,10 +575,11 @@ vspa_fw_dma_write(struct la9310_dev *la9310_dev, struct dma_param *linfo,
 		       (const void *) dma_req.axi_addr, dma_req.byte_cnt);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-		dma_map_page_attrs(&vspadev->pdev->dev,
+		dma_addr=dma_map_page_attrs(&vspadev->pdev->dev,
 				virt_to_page(vspa_dma_region->vaddr),
 				offset_in_page(vspa_dma_region->vaddr), dma_req.byte_cnt,
 				(enum dma_data_direction)PCI_DMA_TODEVICE, 0);
+		dev_info(vspadev->dev,"### vspa_dma_region->vaddr %px dma_addr %px\n",vspa_dma_region->vaddr, (void*)dma_addr);
 #else
 		pci_map_single(vspadev->dev, vspa_dma_region->vaddr,
 				dma_req.byte_cnt, PCI_DMA_TODEVICE);
@@ -611,6 +646,7 @@ fw_read_and_load_sections(struct la9310_dev *la9310_dev,
 			dev_dbg(la9310_dev->dev,
 				"Section %d: type 0x%02X ignored", i,
 				sec_type);
+				//printf("str is %p, sec_name is %d\n", str, sec_header[i].sec_name);
 			section_name =
 				get_overlay_section(str,
 						    sec_header[i].sec_name);
@@ -738,7 +774,7 @@ fw_read_and_load_sections(struct la9310_dev *la9310_dev,
 								    [i].
 								    sec_name);
 					if (section_name) {
-						if (!strncmp
+						if (!_strncmp
 						     (DEFAULT_OVERLAY_SEC_NAME,
 						      section_name,
 						      strlen

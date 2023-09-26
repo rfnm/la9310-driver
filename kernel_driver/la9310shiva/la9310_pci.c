@@ -148,10 +148,15 @@ void enable_all_msi(struct la9310_dev *la9310_dev)
  */
 int la9310_dev_set_interrupt_capability(struct la9310_dev *la9310_dev, int mode)
 {
+	
 	int ret = 0, i = 0;
+
+	printk("la9310_dev_set_interrupt_capability\n");
+
 	/* Check whether the device has MSIx cap */
 	switch (mode) {
 	case PCI_INT_MODE_MULTIPLE_MSI:
+		printk("PCI_INT_MODE_MULTIPLE_MSI\n");
 		enable_all_msi(la9310_dev);
 		ret = pci_alloc_irq_vectors_affinity(la9310_dev->pdev,
 				   MIN_MSI_ITR_LINES,
@@ -176,6 +181,7 @@ int la9310_dev_set_interrupt_capability(struct la9310_dev *la9310_dev, int mode)
 		break;
 
 	case PCI_INT_MODE_MSIX:
+		printk("PCI_INT_MODE_MSIX\n");
 		/* TBD:XXX: LA9310 will support 8 MSIs, thus MSIx. this code
 		 * need to be changed
 		 */
@@ -184,6 +190,7 @@ int la9310_dev_set_interrupt_capability(struct la9310_dev *la9310_dev, int mode)
 		__attribute__((__fallthrough__));
 		/* Fall through */
 	case PCI_INT_MODE_MSI:
+		printk("PCI_INT_MODE_MSI\n");
 		if (!pci_enable_msi(la9310_dev->pdev)) {
 			LA9310_SET_FLG(la9310_dev->flags, LA9310_FLG_PCI_MSI_EN);
 			la9310_dev->irq[MSI_IRQ_MUX].irq_val =
@@ -198,12 +205,14 @@ int la9310_dev_set_interrupt_capability(struct la9310_dev *la9310_dev, int mode)
 		__attribute__((__fallthrough__));
 		/* Fall through */
 	case PCI_INT_MODE_LEGACY:
+		printk("PCI_INT_MODE_LEGACY\n");
 		la9310_dev->irq[MSI_IRQ_MUX].irq_val = la9310_dev->pdev->irq;
 		la9310_dev->irq[MSI_IRQ_MUX].free = LA931XA_MSI_IRQ_FREE;
 		la9310_dev->irq_count = 1;
 		break;
 
 	case PCI_INT_MODE_NONE:
+		printk("PCI_INT_MODE_NONE\n");
 		break;
 	}
 
@@ -453,6 +462,7 @@ static int __init la9310_pcidev_init(void)
 	if ((scratch_buf_size <= LA9310_VSPA_FW_SIZE) ||
 	    (scratch_buf_size > LA9310_MAX_SCRATCH_BUF_SIZE)) {
 		pr_err("ERR %s: Scratch_buf_size is not correct\n", __func__);
+		pr_err("size=0x%08x\n",scratch_buf_size);
 		err = -EINVAL;
 		goto out;
 	}

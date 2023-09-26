@@ -273,6 +273,7 @@ int la9310_request_irq(struct la9310_dev *la9310_dev,
 	int err = 0;
 	u32 num_irq = (la9310_mem_r(&irq_evt_regs->irq_evt_cfg) & NIRQ_MASK) >>
 									    8;
+        dev_info(la9310_dev->dev,"num_irq %d",num_irq);
 
 	la9310_create_outbound_msi(la9310_dev);
 	if (!num_irq) {

@@ -127,6 +127,8 @@ register_v2h_callback(const char *name, v2h_callback_t callbackfunc,
 	struct la9310_dev *la9310_dev;
 	struct la9310_v2h_dev *v2h_dev;
 
+	printk("Inside register_v2h_callback\n");
+
 	la9310_dev = get_la9310_dev_byname(name);
 
 	if (NULL != la9310_dev) {
@@ -139,7 +141,11 @@ register_v2h_callback(const char *name, v2h_callback_t callbackfunc,
 			la9310_set_host_ready(la9310_dev,
 					      LA9310_HIF_STATUS_V2H_READY);
 			return 0;
-		}
+		} else {
+		printk("NULL == v2h_dev) || (NULL == v2h_dev->callback_info\n");
+	}
+	} else {
+		printk("NULL == la9310_dev\n");
 	}
 	return -EINVAL;
 }
@@ -541,7 +547,10 @@ la9310_v2h_probe(struct la9310_dev *la9310_dev, int virq_count,
 		v2h_dev->callback_info->callback_fptr = NULL;
 	}
 	la9310_dev->v2h_priv = v2h_dev;
-	dev_dbg(la9310_dev->dev, "virq_map->virq: %d\n", virq_map->virq);
+	dev_err(la9310_dev->dev, "virq_map->virq: %d\n", virq_map->virq);
+	dev_err(la9310_dev->dev, "intr_v2h_handler: %p\n", intr_v2h_handler);
+	dev_err(la9310_dev->dev, "la9310_dev: %p\n", la9310_dev);
+
 	err = request_irq(virq_map->virq,
 			  intr_v2h_handler, IRQF_NO_THREAD, "V2H interrupt",
 			  la9310_dev);

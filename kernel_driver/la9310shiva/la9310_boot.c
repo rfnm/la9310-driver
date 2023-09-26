@@ -95,6 +95,8 @@ int la9310_load_rtos_img(struct la9310_dev *la9310_dev)
 	struct la9310_boot_header __iomem *boot_header;
 	int size, fw_size;
 	u32 ep_dma_offset, rsvd_ctrl = 0;
+	dma_addr_t dma_addr;
+
 #if LA9310_UPGRADE_TIMESYNC_FW
 	char std_fw_list[STD_MAX_FW_COUNT][STD_FW_NAME_MAX_LENGTH] = {0};
 #endif
@@ -140,10 +142,12 @@ int la9310_load_rtos_img(struct la9310_dev *la9310_dev)
 
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-	dma_map_page_attrs(&la9310_dev->pdev->dev,
+	dma_addr=dma_map_page_attrs(&la9310_dev->pdev->dev,
 			virt_to_page(dma_region->vaddr),
 			offset_in_page(dma_region->vaddr), fw_size,
 			(enum dma_data_direction)PCI_DMA_TODEVICE, 0);
+	dev_info(la9310_dev->dev,"### dma_region->vaddr %px dma_addr %px\n",dma_region->vaddr, (void*)dma_addr);
+
 #else
 	pci_map_single(la9310_dev->pdev, dma_region->vaddr,
 			fw_size, PCI_DMA_TODEVICE);
