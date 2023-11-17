@@ -42,6 +42,17 @@ static inline struct f_sourcesink *func_to_ss(struct usb_function *f)
 
 /*-------------------------------------------------------------------------*/
 
+static struct usb_interface_assoc_descriptor iad_desc = {
+	.bLength = sizeof(iad_desc),
+	.bDescriptorType = USB_DT_INTERFACE_ASSOCIATION,
+
+	.bFirstInterface = 0,
+	.bInterfaceCount = 2,
+	.bFunctionClass = USB_CLASS_VENDOR_SPEC,
+	.bFunctionSubClass = 0,
+	.bFunctionProtocol = 0,
+};
+
 static struct usb_interface_descriptor source_sink_intf_alt0 = {
 	.bLength =		USB_DT_INTERFACE_SIZE,
 	.bDescriptorType =	USB_DT_INTERFACE,
@@ -125,7 +136,9 @@ static struct usb_endpoint_descriptor ss_source_desc[RFNM_EP_CNT];
 
 
 static struct usb_descriptor_header *ss_source_sink_descs[] = {
+//	(struct usb_descriptor_header *) &iad_desc,
 	(struct usb_descriptor_header *) &source_sink_intf_alt0,
+
 	(struct usb_descriptor_header *) &ss_source_desc[0],
 	(struct usb_descriptor_header *) &ss_source_comp_desc,
 	(struct usb_descriptor_header *) &ss_sink_desc[0],
@@ -182,6 +195,15 @@ static void disable_ep(struct usb_composite_dev *cdev, struct usb_ep *ep)
 }
 
 
+static char rfnm_ext_prop_name[] = "DeviceInterfaceGUID";
+static char rfnm_ext_prop_data[] = "{766609f3-ef4a-4e79-bd07-988fe1a5696f}";
+
+static struct usb_os_desc_ext_prop rfnm_ext_prop = {
+	.type = 1,		/* NUL-terminated Unicode String (REG_SZ) */
+	.name = rfnm_ext_prop_name,
+	.data = rfnm_ext_prop_data,
+};
+
 struct usb_os_desc	rfnm_os_desc;
 
 static int
@@ -199,6 +221,13 @@ sourcesink_bind(struct usb_configuration *c, struct usb_function *f)
 		rfnm_os_desc.ext_compat_id = kzalloc(20, GFP_KERNEL);
 		strcpy(rfnm_os_desc.ext_compat_id, "WINUSB");
 		INIT_LIST_HEAD(&rfnm_os_desc.ext_prop);
+
+		rfnm_ext_prop.name_len = strlen(rfnm_ext_prop.name) * 2 + 2;
+		rfnm_os_desc.ext_prop_len = 10 + rfnm_ext_prop.name_len;
+		rfnm_os_desc.ext_prop_count = 1;
+		rfnm_ext_prop.data_len = strlen(rfnm_ext_prop.data) * 2 + 2;
+		rfnm_os_desc.ext_prop_len += rfnm_ext_prop.data_len + 4;
+		list_add_tail(&rfnm_ext_prop.entry, &rfnm_os_desc.ext_prop);
 
 		if (!f->os_desc_table)
 			return -ENOMEM;
