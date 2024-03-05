@@ -1299,6 +1299,7 @@ int unregister_rfnm_callback(void)
 
 		return 0;
 	}
+	printk("couldn't free callbacks\n");
 	return -EINVAL;
 
 

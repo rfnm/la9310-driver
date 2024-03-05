@@ -20,6 +20,39 @@
 
 #define RFNM_EP_CNT 4
 
+
+#define RFNM_MAX_TRX_CH_CNT (8)
+
+
+#define RFNM_PACKED_STRUCT( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+
+RFNM_PACKED_STRUCT(
+    struct rfnm_channel {
+    int64_t freq_min;
+    int64_t freq_max;
+    int64_t freq_cur;
+    int8_t samp_freq_div;
+    int8_t avail;
+    int8_t active;
+}
+);
+
+RFNM_PACKED_STRUCT(
+    struct rfnm_device_status {
+        struct rfnm_channel rx_channels[RFNM_MAX_TRX_CH_CNT];
+        struct rfnm_channel tx_channels[RFNM_MAX_TRX_CH_CNT];
+        int64_t dcs_freq;
+    }
+);
+
+enum rfnm_control_ep {
+    RFNM_GET_DEVICE_STATUS = 0xf00,
+    RFNM_SET_DEVICE_STATUS
+};
+
+
+
+
 void __iomem *gpio4_iomem;
 volatile unsigned int *gpio4;
 int gpio4_initial;
@@ -566,6 +599,7 @@ static int sourcesink_setup(struct usb_function *f,
 	u16			w_index = le16_to_cpu(ctrl->wIndex);
 	u16			w_value = le16_to_cpu(ctrl->wValue);
 	u16			w_length = le16_to_cpu(ctrl->wLength);
+	int z;
 
 	req->length = USB_COMP_EP0_BUFSIZ;
 
@@ -625,8 +659,53 @@ unknown:
 					value);
 	}
 
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_DEVICE_STATUS)) {
+
+
+
+		req->length = w_length;
+		req->zero = 0;
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0)
+			ERROR(c->cdev, "source/sink response, err %d\n",
+					value);
+	}
+
+	if( (ctrl->bRequestType == 0x40 && ctrl->wValue == RFNM_SET_DEVICE_STATUS)) {
+
+		
+
+		req->length = w_length;
+		req->zero = 0;
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0)
+			ERROR(c->cdev, "source/sink response, err %d\n",
+					value);
+	}
+
 	/* device either stalls (value < 0) or reports success */
 	return value;
+}
+
+
+#define RFNM_B_REQUEST (100)
+static bool func_req_match(struct usb_function *f,
+			       const struct usb_ctrlrequest *creq,
+			       bool config0)
+{
+	if(creq->bRequest != RFNM_B_REQUEST) {
+		return false;
+	}
+	
+	if(creq->bRequestType != 0xc0 || creq->bRequestType != 0x40) {
+		return false;
+	}
+	
+	if(creq->wValue != RFNM_GET_DEVICE_STATUS && creq->wValue != RFNM_SET_DEVICE_STATUS) {
+		return false;
+	}
+
+	return true;
 }
 
 static struct usb_function *source_sink_alloc_func(
@@ -655,6 +734,7 @@ static struct usb_function *source_sink_alloc_func(
 	ss->function.disable = sourcesink_disable;
 	ss->function.setup = sourcesink_setup;
 	ss->function.strings = sourcesink_strings;
+	ss->function.req_match = func_req_match;
 
 	ss->function.free_func = sourcesink_free_func;
 

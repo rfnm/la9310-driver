@@ -693,8 +693,8 @@ static int __init la9310_rfnm_init(void)
 		}
 	}
 */	
-	rfnm_iqflood_vmem_nocache = ioremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE * 10);
-	rfnm_iqflood_vmem = memremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE * 10, MEMREMAP_WB ); 
+	rfnm_iqflood_vmem_nocache = ioremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE);
+	rfnm_iqflood_vmem = memremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE, MEMREMAP_WB ); 
 
 	if(!rfnm_iqflood_vmem) {
 		dev_err(la9310_dev->dev, "Failed to map I/Q buffer\n");

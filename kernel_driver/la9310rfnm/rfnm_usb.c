@@ -32,12 +32,18 @@
 /*-------------------------------------------------------------------------*/
 USB_GADGET_COMPOSITE_OPTIONS();
 
-static struct usb_device_descriptor msg_device_desc = {
-	.bLength =		sizeof msg_device_desc,
+static struct usb_device_descriptor rfnm_device_desc = {
+	.bLength =		sizeof rfnm_device_desc,
 	.bDescriptorType =	USB_DT_DEVICE,
 
 	/* .bcdUSB = DYNAMIC */
-	.bDeviceClass =		USB_TYPE_VENDOR,
+#if 0
+	.bDeviceClass =		0xEF, //0,//USB_TYPE_VENDOR,
+	.bDeviceSubClass = 0x02,
+	.bDeviceProtocol = 0x01,
+#else
+	.bDeviceClass =		0,//USB_TYPE_VENDOR,
+#endif
 
 	/* Vendor and product id can be overridden by module parameters.  */
 	.idVendor =		0x5522,
@@ -64,8 +70,14 @@ static struct usb_gadget_strings *dev_strings[] = {
 	NULL,
 };
 
+static struct usb_function_instance *fi_rfnm;
 static struct usb_function_instance *fi_msg;
+static struct usb_function_instance *fi_ncm;
+
+
+static struct usb_function *f_rfnm;
 static struct usb_function *f_msg;
+static struct usb_function *f_ncm;
 
 
 static struct usb_configuration os_desc_config = {
@@ -75,15 +87,19 @@ static struct usb_configuration os_desc_config = {
 	.next_interface_id = 1,
 };	
 
-static int msg_do_config(struct usb_configuration *c)
+static int rfnm_do_config(struct usb_configuration *c)
 {
 	int ret;
-
+#if 0
 	if (gadget_is_otg(c->cdev->gadget)) {
+
+		printk("gadget is OTG\n");
+
 		c->descriptors = otg_desc;
 		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
 	}
-
+#endif
+#if 1
 	c->cdev->use_os_string = 1;
 	c->cdev->b_vendor_code = 0xca;
 
@@ -103,8 +119,61 @@ static int msg_do_config(struct usb_configuration *c)
 	c->cdev->qw_sign[13] = 0;
 
 	c->cdev->os_desc_config = &os_desc_config;
-
+#endif
 	printk("Sending os driver data from callback\n");
+
+	f_rfnm = usb_get_function(fi_rfnm);
+	if (IS_ERR(f_rfnm))
+		return PTR_ERR(f_rfnm);
+
+	ret = usb_add_function(c, f_rfnm);
+	if (ret)
+		goto put_func;
+
+	os_desc_config.interface[0] = f_rfnm;
+
+#if 1
+
+	f_msg = usb_get_function(fi_msg);
+	if (IS_ERR(f_msg))
+		return PTR_ERR(f_msg);
+
+	ret = usb_add_function(c, f_msg);
+	if (ret)
+		goto put_func;
+#endif
+
+
+	f_ncm = usb_get_function(fi_ncm);
+	if (IS_ERR(f_ncm))
+		return PTR_ERR(f_ncm);
+
+	ret = usb_add_function(c, f_ncm);
+	if (ret)
+		goto put_func;
+
+	printk("callback ok\n");
+
+
+	return 0;
+
+put_func:
+	usb_put_function(f_rfnm);
+	usb_put_function(f_msg);
+	usb_put_function(f_ncm);
+	return ret;
+}
+
+
+static int msg_do_config(struct usb_configuration *c)
+{
+	int ret;
+#if 0
+	if (gadget_is_otg(c->cdev->gadget)) {
+		c->descriptors = otg_desc;
+		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+	}
+#endif
 
 	f_msg = usb_get_function(fi_msg);
 	if (IS_ERR(f_msg))
@@ -114,8 +183,6 @@ static int msg_do_config(struct usb_configuration *c)
 	if (ret)
 		goto put_func;
 
-	os_desc_config.interface[0] = f_msg;
-
 	return 0;
 
 put_func:
@@ -123,33 +190,92 @@ put_func:
 	return ret;
 }
 
-static struct usb_configuration msg_config_driver = {
+
+
+static struct usb_configuration rfnm_config_driver = {
 	.label			= "RFNM Temporary USB Driver",
 	.bConfigurationValue	= 1,
 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
 };
 
+char backing_storage[] = "/home/root/backing_storage";
+
+static struct fsg_module_parameters msg_mod_data = {
+	.stall = 1,
+	//.file[0] = backing_storage
+};
+#define fsg_num_buffers	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
+
+FSG_MODULE_PARAMETERS(/* no prefix */, msg_mod_data);
+
+static struct usb_configuration msg_config_driver = {
+	.label			= "Linux File-Backed Storage",
+	.bConfigurationValue	= 1,
+	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
+};
 
 /****************************** Gadget Bind ******************************/
 
-static int msg_bind(struct usb_composite_dev *cdev)
+extern void rfnm_wsled_send_chain(uint8_t chain_id);
+extern void rfnm_wsled_set(uint8_t chain_id, uint8_t led_id, uint8_t r, uint8_t g, uint8_t b);
+
+static int rfnm_bind(struct usb_composite_dev *cdev)
 {
-	struct fsg_opts *opts;
-	struct fsg_config config;
+	struct fsg_opts *msg_opts;
+	struct fsg_config msg_config;
 	int status;
 
-	fi_msg = usb_get_function_instance("RFNM");
+	int r, g, b;
+	r = 0xff;
+	g = 0xc0;
+	b = 0x00;
+
+	rfnm_wsled_set(0, 0, 0, 0, 0xff);
+	rfnm_wsled_send_chain(0);
+
+	fi_rfnm = usb_get_function_instance("RFNM");
+	if (IS_ERR(fi_rfnm))
+		return PTR_ERR(fi_rfnm);
+
+	fi_msg = usb_get_function_instance("mass_storage");
 	if (IS_ERR(fi_msg))
 		return PTR_ERR(fi_msg);
+
+	fi_ncm = usb_get_function_instance("ncm");
+	if (IS_ERR(fi_ncm))
+		return PTR_ERR(fi_ncm);
+
+	fsg_config_from_params(&msg_config, &msg_mod_data, fsg_num_buffers);
+	msg_opts = fsg_opts_from_func_inst(fi_msg);
+
+	msg_opts->no_configfs = true;
+	status = fsg_common_set_num_buffers(msg_opts->common, fsg_num_buffers);
+	if (status)
+		goto fail;
+
+	status = fsg_common_set_cdev(msg_opts->common, cdev, msg_config.can_stall);
+	if (status)
+		goto fail;
+
+	fsg_common_set_sysfs(msg_opts->common, true);
+	status = fsg_common_create_luns(msg_opts->common, &msg_config);
+	if (status)
+		goto fail;
+
+	fsg_common_set_inquiry_string(msg_opts->common, msg_config.vendor_name,
+				      msg_config.product_name);
 
 	status = usb_string_ids_tab(cdev, strings_dev);
 	if (status < 0)
 		goto fail;
-	msg_device_desc.iProduct = strings_dev[USB_GADGET_PRODUCT_IDX].id;
-	msg_device_desc.iSerialNumber =1;
 
+	rfnm_device_desc.iProduct = strings_dev[USB_GADGET_PRODUCT_IDX].id;
+	rfnm_device_desc.iSerialNumber =1;
+#if 0
 	if (gadget_is_otg(cdev->gadget) && !otg_desc[0]) {
 		struct usb_descriptor_header *usb_desc;
+
+		printk("is OTG\n");
 
 		usb_desc = usb_otg_descriptor_alloc(cdev->gadget);
 		if (!usb_desc) {
@@ -160,12 +286,14 @@ static int msg_bind(struct usb_composite_dev *cdev)
 		otg_desc[0] = usb_desc;
 		otg_desc[1] = NULL;
 	}
-
-	status = usb_add_config(cdev, &msg_config_driver, msg_do_config);
+#endif
+	status = usb_add_config(cdev, &rfnm_config_driver, rfnm_do_config);
 	if (status < 0)
 		goto fail;
 
-	
+/*	status = usb_add_config(cdev, &msg_config_driver, msg_do_config);
+	if (status < 0)
+		goto fail;*/
 
 	usb_composite_overwrite_options(cdev, &coverwrite);
 	return 0;
@@ -173,12 +301,19 @@ static int msg_bind(struct usb_composite_dev *cdev)
 fail:
 	kfree(otg_desc[0]);
 	otg_desc[0] = NULL;
+	usb_put_function_instance(fi_rfnm);
 	usb_put_function_instance(fi_msg);
 	return status;
 }
 
-static int msg_unbind(struct usb_composite_dev *cdev)
+static int rfnm_unbind(struct usb_composite_dev *cdev)
 {
+	if (!IS_ERR(f_rfnm))
+		usb_put_function(f_rfnm);
+
+	if (!IS_ERR(fi_rfnm))
+		usb_put_function_instance(fi_rfnm);
+
 	if (!IS_ERR(f_msg))
 		usb_put_function(f_msg);
 
@@ -193,17 +328,17 @@ static int msg_unbind(struct usb_composite_dev *cdev)
 
 /****************************** Some noise ******************************/
 
-static struct usb_composite_driver msg_driver = {
+static struct usb_composite_driver rfnm_driver = {
 	.name		= "rfnm_usb",
-	.dev		= &msg_device_desc,
+	.dev		= &rfnm_device_desc,
 	.max_speed	= USB_SPEED_SUPER_PLUS,
 	.needs_serial	= 1,
 	.strings	= dev_strings,
-	.bind		= msg_bind,
-	.unbind		= msg_unbind,
+	.bind		= rfnm_bind,
+	.unbind		= rfnm_unbind,
 };
 
-module_usb_composite_driver(msg_driver);
+module_usb_composite_driver(rfnm_driver);
 
 MODULE_DESCRIPTION("Mass Storage Gadget");
 MODULE_AUTHOR("Michal Nazarewicz");

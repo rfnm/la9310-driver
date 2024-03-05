@@ -224,7 +224,7 @@ struct la9310_dma_info {
 #define LA9310_IQ_SAMPLES_SIZE		(20 * 1024 * 1024)
 #define LA9310_NLM_OPS_SIZE		(16 * 1024 * 1024)
 #define LA9310_STD_FW_SIZE		(128 * 1024)
-#define LA9310_RFNM_IQFLOOD_SIZE		(20 * 1024 * 1024)
+//#define LA9310_RFNM_IQFLOOD_SIZE		(20 * 1024 * 1024)
 /* Mem region separator */
 #define LA9310_DMA_SEPARATOR_SIZE		(64)
 #define LA9310_DMA_SEPARATOR_PAINT_CHAR	(0xFC)
