@@ -14,6 +14,7 @@
 #include <linux/module.h>
 #include <linux/usb/composite.h>
 #include <linux/err.h>
+#include <linux/rfnm-shared.h>
 
 #include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/function/g_zero.h"
 #include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/u_f.h"
@@ -21,34 +22,7 @@
 #define RFNM_EP_CNT 4
 
 
-#define RFNM_MAX_TRX_CH_CNT (8)
 
-
-#define RFNM_PACKED_STRUCT( __Declaration__ ) __Declaration__ __attribute__((__packed__))
-
-RFNM_PACKED_STRUCT(
-    struct rfnm_channel {
-    int64_t freq_min;
-    int64_t freq_max;
-    int64_t freq_cur;
-    int8_t samp_freq_div;
-    int8_t avail;
-    int8_t active;
-}
-);
-
-RFNM_PACKED_STRUCT(
-    struct rfnm_device_status {
-        struct rfnm_channel rx_channels[RFNM_MAX_TRX_CH_CNT];
-        struct rfnm_channel tx_channels[RFNM_MAX_TRX_CH_CNT];
-        int64_t dcs_freq;
-    }
-);
-
-enum rfnm_control_ep {
-    RFNM_GET_DEVICE_STATUS = 0xf00,
-    RFNM_SET_DEVICE_STATUS
-};
 
 
 
@@ -599,7 +573,7 @@ static int sourcesink_setup(struct usb_function *f,
 	u16			w_index = le16_to_cpu(ctrl->wIndex);
 	u16			w_value = le16_to_cpu(ctrl->wValue);
 	u16			w_length = le16_to_cpu(ctrl->wLength);
-	int z;
+	int z;	
 
 	req->length = USB_COMP_EP0_BUFSIZ;
 
@@ -655,33 +629,34 @@ unknown:
 		req->length = value;
 		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
 		if (value < 0)
-			ERROR(c->cdev, "source/sink response, err %d\n",
-					value);
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
 	}
 
-	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_DEVICE_STATUS)) {
+	
 
-
-
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_DEV_HWINFO)) {
+		req->length = w_length;
+		req->zero = 0;
+		struct rfnm_dev_hwinfo r_hwinfo;
+		rfnm_populate_dev_hwinfo(&r_hwinfo);
+		memcpy(req->buf, &r_hwinfo, w_length);
+		//printk("length: %d\n", w_length);
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+			
+	}
+/*
+	if( (ctrl->bRequestType == 0x40 && ctrl->wValue == RFNM_SET_TX_CH_LIST)) {
 		req->length = w_length;
 		req->zero = 0;
 		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
-		if (value < 0)
-			ERROR(c->cdev, "source/sink response, err %d\n",
-					value);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
 	}
-
-	if( (ctrl->bRequestType == 0x40 && ctrl->wValue == RFNM_SET_DEVICE_STATUS)) {
-
-		
-
-		req->length = w_length;
-		req->zero = 0;
-		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
-		if (value < 0)
-			ERROR(c->cdev, "source/sink response, err %d\n",
-					value);
-	}
+*/
 
 	/* device either stalls (value < 0) or reports success */
 	return value;
@@ -693,15 +668,20 @@ static bool func_req_match(struct usb_function *f,
 			       const struct usb_ctrlrequest *creq,
 			       bool config0)
 {
+	
+	//printk("creq->bRequest %x creq->bRequestType %x creq->wValue %x\n", creq->bRequest, creq->bRequestType, creq->wValue);
+
 	if(creq->bRequest != RFNM_B_REQUEST) {
 		return false;
 	}
 	
-	if(creq->bRequestType != 0xc0 || creq->bRequestType != 0x40) {
+	if(creq->bRequestType != 0xc0 && creq->bRequestType != 0x40) {
 		return false;
 	}
-	
-	if(creq->wValue != RFNM_GET_DEVICE_STATUS && creq->wValue != RFNM_SET_DEVICE_STATUS) {
+
+	if(	creq->wValue != RFNM_GET_DEV_HWINFO && creq->wValue != RFNM_GET_TX_CH_LIST && 
+		creq->wValue != RFNM_SET_TX_CH_LIST && creq->wValue != RFNM_GET_RX_CH_LIST &&
+		creq->wValue != RFNM_SET_RX_CH_LIST ) {
 		return false;
 	}
 
