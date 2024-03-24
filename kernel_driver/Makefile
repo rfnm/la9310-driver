@@ -13,7 +13,7 @@ endif
 include $(KERNEL_DIR)/.config
 
 obj-y += la9310shiva/
-obj-y += la9310demo/
+#obj-y += la9310demo/
 obj-y += la9310rfnm/
 
 all:
