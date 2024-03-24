@@ -48,7 +48,8 @@ ifeq (${DEBUG}, 1)
 CFLAGS += -DDEBUG
 endif
 
-DIRS ?= lib app kernel_driver firmware scripts
+#DIRS ?= lib app kernel_driver firmware scripts
+DIRS ?= kernel_driver
 
 CLEAN_DIRS = $(patsubst %, %_clean, ${DIRS})
 INSTALL_DIRS = $(patsubst %, %_install, ${DIRS})
