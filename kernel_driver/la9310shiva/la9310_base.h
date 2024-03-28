@@ -38,6 +38,10 @@ extern struct completion ScratchRegisterHandshake;
 #endif
 
 extern int scratch_buf_size;
+extern int dac_mask;
+extern int adc_mask;
+extern int adc_rate_mask;
+extern int dac_rate_mask;
 extern uint64_t scratch_buf_phys_addr;
 
 struct la9310_global {

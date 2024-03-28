@@ -25,6 +25,17 @@ static const char *driver_name = "la9310-shiva";
 int scratch_buf_size;
 uint64_t scratch_buf_phys_addr;
 
+int dac_mask = 0x1;
+EXPORT_SYMBOL(dac_mask);
+int adc_mask = 0x4;
+EXPORT_SYMBOL(adc_mask);
+
+int adc_rate_mask = 0x4;
+int dac_rate_mask = 0x1;
+
+EXPORT_SYMBOL(adc_rate_mask);
+EXPORT_SYMBOL(dac_rate_mask);
+
 LIST_HEAD(pcidev_list);
 static int la9310_dev_id_g;
 static char *la9310_dev_name_prefix_g = "nlm";
@@ -501,6 +512,19 @@ module_init(la9310_pcidev_init);
 module_exit(la9310_pcidev_exit);
 module_param(scratch_buf_size, int, 0);
 module_param(scratch_buf_phys_addr, ullong, 0);
+
+module_param(adc_mask, int, 0400);
+MODULE_PARM_DESC(adc_mask, "ADC channel enable mask - bit wise (MAX 0x4)");
+module_param(adc_rate_mask, int, 0400);
+MODULE_PARM_DESC(adc_rate_mask,
+	"ADC Frequency mask for each channel (0 for Full Duplex, 1 for Half Duplex)");
+module_param(dac_mask, int, 0400);
+MODULE_PARM_DESC(dac_mask, "DAC channel enable mask - bit wise (MAX 0x2)");
+module_param(dac_rate_mask, int, 0400);
+MODULE_PARM_DESC(dac_rate_mask,
+	"DAC Frequency for each channel (0 for Full Duplex, 1 for Half Duplex");
+
+
 MODULE_PARM_DESC(max_raw_minors, "Maximum number of raw devices (1-65536)");
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("NXP");

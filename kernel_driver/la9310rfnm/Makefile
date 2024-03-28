@@ -74,6 +74,7 @@ obj-m += rfnm_daughterboard.o
 obj-m += rfnm_gpio.o
 obj-m += rfnm_gpt.o
 obj-m += rfnm_tti.o
+obj-m += rfnm_test.o
 
 #obj-m += rfnm_kasan.o
 

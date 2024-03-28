@@ -785,6 +785,11 @@ la9310_base_probe(struct la9310_dev *la9310_dev)
 			pci_domain_nr(la9310_dev->pdev->bus));
 	wdog_set_modem_status(0, WDOG_MODEM_READY);
 
+	writel(adc_mask, &la9310_dev->hif->adc_mask);
+	writel(adc_rate_mask, &la9310_dev->hif->adc_rate_mask);
+	writel(dac_mask, &la9310_dev->hif->dac_mask);
+	writel(dac_rate_mask, &la9310_dev->hif->dac_rate_mask);
+
 	init_stage = LA9310_SUBDRV_PROBE_STAGE;
 	dev_info(la9310_dev->dev, "%s:Initiating sub-drivers\n",
 			la9310_dev->name);

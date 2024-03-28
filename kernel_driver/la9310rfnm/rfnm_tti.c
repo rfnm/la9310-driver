@@ -332,7 +332,9 @@ static int __init rfnm_gpt_init(void)
 	struct imx_timer *imxtm;
 	static int initialized;
 	int ret;
-    struct device_node *np;                                                  
+    struct device_node *np;
+
+#if 1                                        
                                                                         
     np = of_find_node_by_path("/rfnm_tti");        
     
@@ -372,6 +374,47 @@ static int __init rfnm_gpt_init(void)
 	initialized = 1;
 
 	rfnm_gpio_output(1, RFNM_DGB_GPIO5_16);
+
+#else
+
+	rfnm_gpio_output(1, RFNM_DGB_GPIO5_16);
+
+	void __iomem *gpio_iomem;
+	volatile unsigned int *gpio;
+
+
+	volatile char tmpbuf[100000];
+	gpio_iomem = ioremap(0x00900000, SZ_32K);
+	gpio = (volatile unsigned int *) gpio_iomem;
+
+	rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+	rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+	rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+	rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+	rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+
+	int i;
+	for(i = 0; i < 1000*10; i++) {
+		rfnm_gpio_set(1, RFNM_DGB_GPIO5_16);
+		memcpy(&tmpbuf[0], gpio, 1024*1);
+	}
+	
+
+	rfnm_gpio_clear(1, RFNM_DGB_GPIO5_16);
+
+
+
+
+
+
+
+
+#endif
+
+
+
+
+
 
 	return 0;
 }
