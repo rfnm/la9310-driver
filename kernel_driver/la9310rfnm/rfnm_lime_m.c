@@ -493,19 +493,19 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	if(freq <= 60) {
 		LMS7002M_rfe_set_path(lms, LMS_CHA, LMS7002M_RFE_LNAL);
-	} else if(freq <= 1000) {
-		LMS7002M_rfe_set_path(lms, LMS_CHA, LMS7002M_RFE_LNAH);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_LRIM, 1);
-	} else {
+	} else if(freq <= 1400) {
 		LMS7002M_rfe_set_path(lms, LMS_CHA, LMS7002M_RFE_LNAW);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_LRIM, 0);
+	} else {
+		LMS7002M_rfe_set_path(lms, LMS_CHA, LMS7002M_RFE_LNAH);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_LRIM, 1);
 	}
 
 	
 	if(freq < 30) {
 		freq = 30;
 	}
-	ret = LMS7002M_set_lo_freq(lms, LMS_RX, LMS_REF_FREQ, freq * 1e6, &actualRate);
+	ret = LMS7002M_set_lo_freq(lms, LMS_RX, LMS_REF_FREQ, rx_ch->freq, &actualRate);
 
 	if(ret) {
 		printk("Tuning failed\n");
@@ -738,6 +738,12 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch, rx_s);
 
+	dgb_dt->dac_ifs = 0x7;
+	dgb_dt->dac_iqswap[0] = 0;
+	dgb_dt->dac_iqswap[1] = 0;
+	//dgb_dt->adc_iqswap[0] = 0;
+	dgb_dt->adc_iqswap[0] = 1;
+	dgb_dt->adc_iqswap[1] = 0;
 	rfnm_dgb_reg(dgb_dt);
 
 	

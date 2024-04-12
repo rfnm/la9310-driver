@@ -291,13 +291,30 @@ la9310_create_rfnm_iqflood_outbound(struct la9310_dev *la9310_dev)
 	ccsr_region = &la9310_dev->mem_regions[LA9310_MEM_REGION_CCSR];
 
 	ls_pcie_iatu_outbound_set(ccsr_region->vaddr + PCIE_RHOM_DBI_BASE,
-			LA9310_IPC_OUTBOUND_WIN,
+			OUTBOUND_2,
 			PCIE_ATU_TYPE_MEM,
 			LA9310_IQFLOOD_PHYS_ADDR,
 			RFNM_IQFLOOD_MEMADDR,
 			RFNM_IQFLOOD_MEMSIZE);
 	dev_info(la9310_dev->dev, "RFNM IQFLOOD Buff:0x%x[H]-0x%x[M],size %d\n",
 		 LA9310_IQFLOOD_PHYS_ADDR, RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE);
+}
+
+void
+la9310_create_rfnm_ocram_outbound(struct la9310_dev *la9310_dev)
+{
+	struct la9310_mem_region_info *ccsr_region;
+
+	ccsr_region = &la9310_dev->mem_regions[LA9310_MEM_REGION_CCSR];
+
+	ls_pcie_iatu_outbound_set(ccsr_region->vaddr + PCIE_RHOM_DBI_BASE,
+			OUTBOUND_3,
+			PCIE_ATU_TYPE_MEM,
+			LA9310_OCRAM_PHYS_ADDR,
+			RFNM_OCRAM_MEMADDR,
+			RFNM_OCRAM_MEMSIZE_SHIVA);
+	dev_info(la9310_dev->dev, "RFNM OCRAM Buff:0x%x[H]-0x%x[M],size %d\n",
+		 LA9310_OCRAM_PHYS_ADDR, RFNM_OCRAM_MEMADDR, RFNM_OCRAM_MEMSIZE_SHIVA);
 }
 
 static void
@@ -704,6 +721,7 @@ la9310_base_probe(struct la9310_dev *la9310_dev)
 
 	la9310_create_rfnm_iqflood_outbound(la9310_dev);
 
+	la9310_create_rfnm_ocram_outbound(la9310_dev);
 
 	rc = la9310_init_hif(la9310_dev);
 	if (rc)

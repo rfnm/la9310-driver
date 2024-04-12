@@ -21,7 +21,7 @@ ccflags-y += -I/home/davide/LMS7002M_kernel/include -I/home/davide/LMS7002M_kern
 
 
 
-obj-m := la9310rfnm.o rfnm_usb_function.o rfnm_usb.o
+obj-m := la9310rfnm.o rfnm_usb_function.o rfnm_usb.o 
 
 rfnm_granita-objs := rfnm_granita_m.o
 rfnm_granita-objs += rfnm_fe_generic.o 
@@ -76,10 +76,12 @@ obj-m += rfnm_gpt.o
 obj-m += rfnm_tti.o
 obj-m += rfnm_test.o
 
+obj-m += rfnm_usb_boost.o
+
 #obj-m += rfnm_kasan.o
 
 
 
 
-la9310rfnm-objs := la9310_rfnm.o  cache.o #pack12bit.o unpack12bit.o
+la9310rfnm-objs := la9310_rfnm.o  cache.o pack16to12.o
 
