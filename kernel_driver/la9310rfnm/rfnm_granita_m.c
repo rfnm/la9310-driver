@@ -116,29 +116,37 @@ void rfnm_rx_ch_get(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	printk("inside rfnm_rx_ch_get\n");
 }
 
-
-
-int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
-
-
-	int freq_mhz = tx_ch->freq / (1000 * 1000);
+int rfnm_granita_tdd(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_rx_ch * rx_ch) {
 	int ret;
-
-	ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, freq_mhz * 1000, parse_granita_iq_lpf(tx_ch->iq_lpf_bw));
+	printk("RFNM: TDD rx %d tx %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
+	ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
 	if(ret) {
-		printk("SiAPIPowerUpTX wouldn't return nice things\n");
+		printk("SiAPILoopback wouldn't return nice things\n");
 		return -1;
 	}
 
-	ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, 48);
+	ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, rx_ch->gain);
+	if(ret) {
+		printk("SiAPIRXGAIN failed\n");
+		return -1;
+	}
+
+	ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, /*tx_ch->power*/ 48);
 	if(ret) {
 		printk("SiAPITXGAIN wouldn't return nice things\n");
 		return -1;
 	}
-	
-	granita0_tx_freqsel(dgb_dt, freq_mhz);
-    //granita0_tx_power(dgb_dt, freq_mhz, tx_ch->power);
-	granita0_tx_power(dgb_dt, freq_mhz, 0);
+
+	return 0;	
+}
+
+
+
+int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
+
+	int ret;
+
+	granita0_tx_freqsel(dgb_dt, HZ_TO_MHZ(tx_ch->freq));
 	
 	if(tx_ch->path == RFNM_PATH_SMA_A) {
 		granita0_ant_a_tx(dgb_dt);
@@ -146,8 +154,99 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 		granita0_ant_b_tx(dgb_dt);
 	}
 
+	if(tx_ch->path == RFNM_PATH_LOOPBACK) {
+		granita0_tx_power(dgb_dt, HZ_TO_MHZ(tx_ch->freq), -24, 1);
+	} else {
+		granita0_tx_power(dgb_dt, HZ_TO_MHZ(tx_ch->freq), tx_ch->power, 0);
+	}
+
+
+	if(tx_ch->path == RFNM_PATH_LOOPBACK) {
+		// if the path is loopback, it is of PARAMOUNT importance to keep tight
+		// control over the amplifiers and chip output power. 
+
+		// Two options:
+		// If power is > 0, disable both amplifiers and set switching attenuation to zero
+		// if power is zero, we are in loopback calibration mode, enable some 
+		// switchable attenuation and also enable the second 20 dB amplifier. 
+
+		if(tx_ch->power > 0) {
+			granita0_tx_loopback(dgb_dt, 0);
+		} else {
+			granita0_tx_loopback(dgb_dt, 1);
+		}
+	}
+
 	rfnm_fe_load_latches(dgb_dt);
 	rfnm_fe_trigger_latches(dgb_dt);
+
+
+
+	if(tx_ch->path != RFNM_PATH_LOOPBACK && tx_ch->enable != RFNM_CH_ON_TDD) {
+		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->iq_lpf_bw));
+		if(ret) {
+			printk("SiAPIPowerUpTX wouldn't return nice things\n");
+			return -1;
+		}
+
+		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, 48);
+		if(ret) {
+			printk("SiAPITXGAIN wouldn't return nice things\n");
+			return -1;
+		}
+	}
+	else if(tx_ch->enable != RFNM_CH_ON_TDD) {
+		// loopback rx frequency is the first rx channel with rx loopback mode set
+		long rx_freq = 0;
+		for(int q = 0; q < 4; q++) {
+			if(dgb_dt->rx_ch[q]->path == RFNM_PATH_LOOPBACK) {
+				rx_freq = dgb_dt->rx_ch[q]->freq;
+				break;
+			}
+		}
+		if(!rx_freq) {
+			printk("You need to set the RX frequency on a RX channel using the loopback path before calling for tx loopback\n");
+			return -1;
+		}
+		printk("%d %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
+		ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
+		if(ret) {
+			printk("SiAPILoopback wouldn't return nice things\n");
+			return -1;
+		}
+
+		ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, 0);
+		if(ret) {
+			printk("SiAPIRXGAIN failed\n");
+			goto fail;
+		}
+
+		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, tx_ch->power);
+		if(ret) {
+			printk("SiAPITXGAIN wouldn't return nice things\n");
+			return -1;
+		}
+	}
+
+
+	if(tx_ch->enable == RFNM_CH_ON_TDD) {
+		memcpy(&dgb_dt->fe_tdd[RFNM_TX], &dgb_dt->fe, sizeof(struct fe_s));	
+
+		for(int i = 0; i < 2; i++) {
+			if(dgb_dt->rx_s[i]->enable == RFNM_CH_ON_TDD) {
+				rfnm_dgb_en_tdd(dgb_dt, tx_ch, dgb_dt->rx_s[i]);
+				rfnm_granita_tdd(dgb_dt, tx_ch, dgb_dt->rx_s[i]);
+				break;
+			}
+		}
+	}
+
+	memcpy(dgb_dt->tx_s[0], dgb_dt->tx_ch[0], sizeof(struct rfnm_api_tx_ch));
+	
+		
+
+
+
 
 	return 0;
 fail: 
@@ -159,6 +258,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	int freq = rx_ch->freq / (1000 * 1000);
 	int dbm = rx_ch->gain;
 	int ret;
+	int gr_api_id;
+	
 
 	if(rx_ch->dgb_ch_id == 0) {
 		if(rx_ch->path == RFNM_PATH_SMA_A) {
@@ -176,12 +277,12 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		}
 
 		if(rx_ch->path == RFNM_PATH_SMA_B) {
-			granita0_tx_power(dgb_dt, -100, 0);
+			granita0_tx_power(dgb_dt, -100, 0, 0);
 			granita0_ant_a_crossover(dgb_dt);
 		}
 
 		if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
-			granita0_tx_power(dgb_dt, freq, -100);
+			granita0_tx_power(dgb_dt, freq, -100, 0);
 			if(freq < 3000) {
 				granita0_ant_a_embeded_lf(dgb_dt);
 			} else {
@@ -189,15 +290,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			}
 		}
 
-		if(dbm > 0) {
-			if(dbm > 64) {
-				dbm = 64;
-			}
-			ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 2, dbm);
-			if(ret) {
-				printk("SiAPIRXGAIN failed\n");
-				goto fail;
-			}
+		if(rx_ch->path == RFNM_PATH_LOOPBACK) {
+			granita0_ant_a_loopback(dgb_dt);
 		}
 
 		granita0_fa(dgb_dt, freq);
@@ -219,14 +313,13 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		}
 
 		if(rx_ch->path == RFNM_PATH_SMA_A) {
-			granita0_tx_power(dgb_dt, freq, -100);
+			granita0_tx_power(dgb_dt, freq, -100, 0);
 			granita0_ant_b_crossover(dgb_dt);
-			ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 2, dbm);
 		}
 
 
 		if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
-			granita0_tx_power(dgb_dt, freq, -100);
+			granita0_tx_power(dgb_dt, freq, -100, 0);
 			if(freq < 3000) {
 				granita0_ant_b_embeded_lf(dgb_dt);
 			} else {
@@ -234,15 +327,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			}
 		}
 
-		if(dbm > 0) {
-			if(dbm > 64) {
-				dbm = 64;
-			}
-			ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, dbm);
-			if(ret) {
-				printk("SiAPIRXGAIN failed\n");
-				goto fail;
-			}
+		if(rx_ch->path == RFNM_PATH_LOOPBACK) {
+			granita0_ant_b_loopback(dgb_dt);
 		}
 		
 		granita0_fb(dgb_dt, freq);
@@ -253,12 +339,56 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	rfnm_fe_load_latches(dgb_dt);
 	rfnm_fe_trigger_latches(dgb_dt);
 
+
+	if(rx_ch->dgb_ch_id == 0) {
+		gr_api_id = 2;
+	} else {
+		gr_api_id = 1;
+	}
+
+
+	if(rx_ch->path != RFNM_PATH_LOOPBACK && rx_ch->enable != RFNM_CH_ON_TDD) {
+		// TX command takes care of RX init when in loopback mode
+		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(rx_ch->freq), parse_granita_iq_lpf(rx_ch->iq_lpf_bw));
+		if(ret) {
+			return -1;
+			//printf("SiAPIPowerUpRX wouldn't return nice things\n");
+		}
+
+		printk("dbm is %d\n", dbm);
+
+		if(dbm > 0) {
+			if(dbm > 64) {
+				dbm = 64;
+			}
+			ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], gr_api_id, dbm);
+			if(ret) {
+				printk("SiAPIRXGAIN failed\n");
+				goto fail;
+			}
+		}
+	}
+
+	if(rx_ch->enable == RFNM_CH_ON_TDD) {
+		// go for maximum attenuation on tx path
+		granita0_tx_power(dgb_dt, 1000, -100, 0);
+		
+		memcpy(&dgb_dt->fe_tdd[RFNM_RX], &dgb_dt->fe, sizeof(struct fe_s));	
+		if(dgb_dt->tx_s[0]->enable == RFNM_CH_ON_TDD) {
+			rfnm_dgb_en_tdd(dgb_dt, dgb_dt->tx_s[0], rx_ch);
+			rfnm_granita_tdd(dgb_dt, dgb_dt->tx_s[0], rx_ch);
+		}
+	}
+
+	memcpy(dgb_dt->rx_s[rx_ch->dgb_ch_id], dgb_dt->rx_ch[rx_ch->dgb_ch_id], sizeof(struct rfnm_api_rx_ch));	
+
 	return 0;
 
 	
 fail: 
 	return -EAGAIN;
 }
+
 
 
 static int rfnm_granita_probe(struct spi_device *spi)
@@ -370,6 +500,12 @@ static int rfnm_granita_probe(struct spi_device *spi)
 		cfg->daughterboard_eeprom[dgb_id].board_id, 
 		cfg->daughterboard_eeprom[dgb_id].board_revision_id, 
 		cfg->daughterboard_eeprom[dgb_id].serial_number*/
+
+	dgb_dt->dac_ifs = 0xf;
+	dgb_dt->dac_iqswap[0] = 1;
+	dgb_dt->dac_iqswap[1] = 0;
+	dgb_dt->adc_iqswap[0] = 0;
+	dgb_dt->adc_iqswap[1] = 0;
 	rfnm_dgb_reg(dgb_dt);
 
 	return 0;
