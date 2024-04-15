@@ -46,8 +46,8 @@ static struct usb_device_descriptor rfnm_device_desc = {
 #endif
 
 	/* Vendor and product id can be overridden by module parameters.  */
-	.idVendor =		0x5522,
-	.idProduct =		0x1199,
+	.idVendor =		0x15A2,
+	.idProduct =		0x8C,
 	.bNumConfigurations =	1,
 };
 
@@ -270,7 +270,8 @@ static int rfnm_bind(struct usb_composite_dev *cdev)
 		goto fail;
 
 	rfnm_device_desc.iProduct = strings_dev[USB_GADGET_PRODUCT_IDX].id;
-	rfnm_device_desc.iSerialNumber =1;
+	rfnm_device_desc.iManufacturer = strings_dev[USB_GADGET_MANUFACTURER_IDX].id;
+	rfnm_device_desc.iSerialNumber = strings_dev[USB_GADGET_SERIAL_IDX].id;;
 #if 0
 	if (gadget_is_otg(cdev->gadget) && !otg_desc[0]) {
 		struct usb_descriptor_header *usb_desc;
@@ -330,6 +331,7 @@ static int rfnm_unbind(struct usb_composite_dev *cdev)
 
 static struct usb_composite_driver rfnm_driver = {
 	.name		= "rfnm_usb",
+	.udc_name = "38100000.usb",
 	.dev		= &rfnm_device_desc,
 	.max_speed	= USB_SPEED_SUPER_PLUS,
 	.needs_serial	= 1,
@@ -339,6 +341,9 @@ static struct usb_composite_driver rfnm_driver = {
 };
 
 module_usb_composite_driver(rfnm_driver);
+
+//module_driver(__usb_composite_driver, usb_composite_probe, usb_composite_unregister);
+
 
 MODULE_DESCRIPTION("Mass Storage Gadget");
 MODULE_AUTHOR("Michal Nazarewicz");
