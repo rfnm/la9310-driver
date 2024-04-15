@@ -39,6 +39,9 @@
 
 #include <linux/delay.h>
 
+#define RFNM_ADC_BUFCNT (4096*4) // 4096 ~= 10ms
+
+
 
 volatile int countdown_to_print = 0;
 
@@ -61,18 +64,100 @@ void __iomem *gpio4_iomem;
 volatile unsigned int *gpio4;
 int gpio4_initial;
 
-uint8_t * rfnm_iqflood_vmem;
-uint8_t * rfnm_iqflood_vmem_nocache;
+//uint8_t * rfnm_iqflood_vmem;
+//uint8_t * rfnm_iqflood_vmem_nocache;
 
-struct rfnm_cb {
-	int head;
-	int tail;
-	int reader_too_slow;
-	int writer_too_slow;
+#define RFNM_PACKED_STRUCT( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+
+typedef uint32_t vspa_complex_fixed16;
+#define FFT_SIZE 512
+#define DMA_RX_SIZE		(256)
+#define LA_RX_BASE_BUFSIZE (4*DMA_RX_SIZE)
+#define LA_RX_BASE_BUFSIZE_12 ((LA_RX_BASE_BUFSIZE * 3) / 4)
+
+#define RFNM_RX_BUF_CNT 7
+#define RFNM_IGN_BUFCNT 3
+#define ERROR_MAX 0x9
+RFNM_PACKED_STRUCT(
+	struct rfnm_m7_status {
+		uint32_t tx_buf_id;
+		uint32_t rx_head;
+		uint32_t kernel_cache_flush_tail; // this variable shouldn't be here, but it's already mapped ... 
+	} 
+); 
+
+struct rfnm_bufdesc_tx {
+	vspa_complex_fixed16 buf[FFT_SIZE];
+	uint32_t dac_id;
+	uint32_t phytimer;
+	uint32_t cc;
+	uint32_t axiq_done;
+	uint32_t iqcomp_done;
+	// (64 - (4 * 5)) / 4 = 22
+	uint32_t pad_to_64[11];
+};
+
+struct rfnm_bufdesc_rx {
+	vspa_complex_fixed16 buf[DMA_RX_SIZE];
+	uint32_t adc_id;
+	uint32_t phytimer;
+	uint32_t cc;
+	uint32_t axiq_done;
+	uint32_t iqcomp_done;
+	uint32_t read;
+	// (64 - (4 * 5)) / 4 = 22
+	uint32_t pad_to_64[10];
+};
+
+struct rfnm_bufdesc_rx *rfnm_bufdesc_rx;
+volatile struct rfnm_m7_status *rfnm_m7_status;
+
+struct rfnm_rx_usb_cb {
+	// in the buffer of rx_usb_cb outgoing usb buffers, this is the next one we are going to equeue
+	// there is no tail; it's meant to overflow
+	uint32_t head;
+	uint32_t adc_buf[4];
+	uint32_t adc_buf_cnt[4];
+	uint32_t cc;
+	uint32_t usb_host_dropped;
+	//uint32_t tail;
+	//uint32_t reader_too_slow;
+	//uint32_t writer_too_slow;
 	spinlock_t writer_lock;
 	spinlock_t reader_lock;
-	int read_cc;
+	//int read_cc;
 };
+
+struct rfnm_rx_la_cb {
+	//int head;
+	uint32_t tail;
+	
+	uint32_t adc_cc[4];
+	
+	//int reader_too_slow;
+	//int writer_too_slow;
+	spinlock_t writer_lock;
+	spinlock_t reader_lock;
+	//int read_cc;
+};
+
+#define RFNM_RX_USB_BUF_MULTI 128
+#define RFNM_RX_USB_BUF_SIZE 128
+
+RFNM_PACKED_STRUCT(
+    struct rfnm_rx_usb_buf {
+        uint32_t magic;
+		uint32_t phytimer;
+		uint32_t dropped;
+		uint32_t adc_cc;
+		uint32_t rx_cc;
+		uint32_t adc_id;
+		uint32_t padding[2];
+		uint8_t buf[LA_RX_BASE_BUFSIZE_12 * RFNM_RX_USB_BUF_MULTI];
+    }
+);
+
+struct rfnm_rx_usb_buf *rfnm_rx_usb_buf;
 
 struct rfnm_usb_req_buffer {
 	spinlock_t list_lock;
@@ -99,7 +184,8 @@ struct usb_ep_queue_ele {
 };
 
 struct rfnm_dev {
-	struct rfnm_cb usb_cb;
+	struct rfnm_rx_usb_cb rx_usb_cb;
+	struct rfnm_rx_la_cb rx_la_cb;
 	uint8_t * usb_config_buffer;
 };
 
@@ -116,6 +202,8 @@ struct rfnm_dev *rfnm_dev;
 #define DBGP_REQ_LEN                  512
 
 
+void rfnm_pack16to12_aarch64(uint8_t * dest, uint8_t * src8, int cnt);
+#if 0
 void pack16to12(uint8_t* dest, uint8_t* src8, int cnt) {
 	uint64_t buf;
 	uint64_t r0;
@@ -147,6 +235,8 @@ void pack16to12(uint8_t* dest, uint8_t* src8, int cnt) {
 	}
 
 }
+
+#endif
 
 static inline size_t list_count_nodes(struct list_head *head)
 {
@@ -189,7 +279,7 @@ static void rfnm_usb_buffer_done(struct usb_ep_queue_ele *usb_ep_queue_ele)
 }
 
 
-
+#if 0
 static void rfnm_tasklet_handler(unsigned long tasklet_data) {
 
 	struct usb_ep_queue_ele *usb_ep_queue_ele;
@@ -206,10 +296,10 @@ tasklet_again:
 
 	uint8_t * usb_buf_ptr = (uint8_t *) usb_ep_queue_ele->req->buf;
 
-	spin_lock(&rfnm_dev->usb_cb.reader_lock);
+	spin_lock(&rfnm_dev->rx_usb_cb.reader_lock);
 
-	int head = smp_load_acquire(&rfnm_dev->usb_cb.head);
-	int tail = rfnm_dev->usb_cb.tail;
+	int head = smp_load_acquire(&rfnm_dev->rx_usb_cb.head);
+	int tail = rfnm_dev->rx_usb_cb.tail;
 	int readable, writable;
 	//uint8_t * block_writing_to_addr = usb_buf_ptr;
 	
@@ -306,41 +396,6 @@ tasklet_again:
 
 
 
-		//printk("- %d %d %d", head, tail, readable);
-
-/*
-		uint32_t * tmp32a;
-		uint32_t * tmp32c;
-		uint32_t * tmp32b;
-
-		
-
-		tmp32a = (uint32_t *) ((uint8_t *) rfnm_iqflood_vmem + tail);
-		tmp32b = (uint32_t *) ((uint8_t *) usb_buf_ptr + RFNM_PACKET_HEAD_SIZE);
-		
-
-		if(1)
-		printk("\n%08x %08x %08x %08x %08x %08x %08x %08x\n%08x %08x %08x %08x %08x %08x %08x %08x\n ",
-			*(tmp32a + 0), 
-			*(tmp32a + 1),
-			*(tmp32a + 2),
-			*(tmp32a + 3),
-			*(tmp32a + 4),
-			*(tmp32a + 5),
-			*(tmp32a + 6),
-			*(tmp32a + 7),
-
-			*(tmp32b + 0), 
-			*(tmp32b + 1),
-			*(tmp32b + 2),
-			*(tmp32b + 3),
-			*(tmp32b + 4),
-			*(tmp32b + 5),
-			*(tmp32b + 6),
-			*(tmp32b + 7)
-		);
-
-*/
 
 		
 	} else {
@@ -358,14 +413,14 @@ tasklet_again:
 
 
 	struct rfnm_packet_head rfnm_packet_head;
-	rfnm_packet_head.cc = rfnm_dev->usb_cb.read_cc++;
+	rfnm_packet_head.cc = rfnm_dev->rx_usb_cb.read_cc++;
 	rfnm_packet_head.check = 0x7ab8bd6f;
 
 	static int last_reader_slow;
 
-	if(last_reader_slow != rfnm_dev->usb_cb.reader_too_slow) {
+	if(last_reader_slow != rfnm_dev->rx_usb_cb.reader_too_slow) {
 		rfnm_packet_head.reader_too_slow = 1;
-		last_reader_slow = rfnm_dev->usb_cb.reader_too_slow;
+		last_reader_slow = rfnm_dev->rx_usb_cb.reader_too_slow;
 	} else {
 		rfnm_packet_head.reader_too_slow = 0;
 	}
@@ -382,9 +437,9 @@ tasklet_again:
 
 	dcache_clean_poc(usb_buf_ptr, usb_buf_ptr + usb_ep_queue_ele->req->length);
 	
-	smp_store_release(&rfnm_dev->usb_cb.tail, tail);
+	smp_store_release(&rfnm_dev->rx_usb_cb.tail, tail);
 
-	spin_unlock(&rfnm_dev->usb_cb.reader_lock);
+	spin_unlock(&rfnm_dev->rx_usb_cb.reader_lock);
 
 	*gpio4 = *gpio4 | (0x1 << 0); *gpio4 = *gpio4 & ~(0x1 << 0);
 	rfnm_usb_buffer_done(usb_ep_queue_ele);
@@ -392,16 +447,263 @@ tasklet_again:
 	goto tasklet_again;
 
 exit_tasklet: 
-	spin_unlock(&rfnm_dev->usb_cb.reader_lock);
+	spin_unlock(&rfnm_dev->rx_usb_cb.reader_lock);
 exit_tasklet_no_unlock:
 	*gpio4 = *gpio4 & ~(0x1 << 7);
 }
 
+#else
+
+
+
+
+
+#if 0
+static void rfnm_tasklet_handler(unsigned long tasklet_data) {
+
+	*gpio4 = *gpio4 | (0x1 << 7); 
+
+tasklet_again:
+
+	//pack16to12((uint8_t *) usb_buf_ptr + RFNM_PACKET_HEAD_SIZE, (uint8_t *) rfnm_iqflood_vmem + tail, (writable * 16) / 12);
+	
+
+	//dcache_clean_poc(usb_buf_ptr, usb_buf_ptr + usb_ep_queue_ele->req->length);
+
+//	rfnm_bufdesc_rx
+
+	uint32_t head = rfnm_m7_status->rx_head;
+	uint32_t tail = rx_tail;
+
+	uint32_t readable = head - tail;
+
+	if(head < tail) {
+		readable += RFNM_ADC_BUFCNT;
+	}
+
+	for(int q = 0; q < readable; q++) {
+
+		
+		if(rx_cc[rfnm_bufdesc_rx[tail].adc_id] != rfnm_bufdesc_rx[tail].cc) {
+			printk("cc mismatch on %d -> %d vs %d\n", rfnm_bufdesc_rx[tail].adc_id, rfnm_bufdesc_rx[tail].cc, rx_cc[rfnm_bufdesc_rx[tail].adc_id]);
+			rx_cc[rfnm_bufdesc_rx[tail].adc_id] = rfnm_bufdesc_rx[tail].cc;
+		}
+		
+		rx_cc[rfnm_bufdesc_rx[tail].adc_id]++;
+		
+
+		if(++tail == RFNM_ADC_BUFCNT) {
+			tail = 0;
+		}
+	}
+	
+
+	printk("head is at %d\n", rfnm_m7_status->rx_head);
+
+//	goto tasklet_again;
+
+exit_tasklet: 
+//	spin_unlock(&rfnm_dev->rx_usb_cb.reader_lock);
+exit_tasklet_no_unlock:
+
+//	tasklet_schedule(&rfnm_tasklet);
+
+	*gpio4 = *gpio4 & ~(0x1 << 7);
+
+}
+
+#endif
+
+static void rfnm_tasklet_handler(unsigned long tasklet_data);
 static DECLARE_TASKLET_OLD(rfnm_tasklet, &rfnm_tasklet_handler);
+
+void kernel_neon_begin(void);
+void kernel_neon_end(void);
+
+
+ static void rfnm_tasklet_handler(unsigned long tasklet_data) {
+
+	*gpio4 = *gpio4 | (0x1 << 4);
+
+	kernel_neon_begin();
+
+	struct usb_ep_queue_ele *usb_ep_queue_ele;
+	
+tasklet_again:
+
+	uint8_t *dcache;
+	
+	//*gpio4 = *gpio4 | (0x1 << 7);
+	//dcache = (unsigned char *) rfnm_m7_status;
+	//dcache_inval_poc(dcache, dcache + SZ_4K);
+	//*gpio4 = *gpio4 & ~(0x1 << 7);
+
+	//dcache = (unsigned char *) &rfnm_bufdesc_rx[0];
+	//dcache_clean_poc(dcache, dcache + SZ_64M);
+
+	barrier();
+	
+	//uint32_t la_head = smp_load_acquire(&rfnm_m7_status->rx_head);
+	uint32_t la_head = rfnm_m7_status->rx_head;
+	uint32_t la_tail = rfnm_dev->rx_la_cb.tail;
+
+	uint32_t la_readable = la_head - la_tail;
+
+	if(la_head < la_tail) {
+		la_readable += RFNM_ADC_BUFCNT;
+	}
+
+	if(la_readable < 32) {
+		// need to stay behind writer, as the ping pong dma has a 2 buffers write latency
+		goto exit_tasklet;
+	}
+
+	la_readable -= 16;
+
+	if(la_readable < 0) {
+		la_readable = 0;
+		goto exit_tasklet;
+	}
+
+	if(la_readable > (RFNM_ADC_BUFCNT / 4)) {
+		// too many buffers behind, log error and jump forward
+		rfnm_dev->rx_la_cb.tail = rfnm_m7_status->rx_head;
+		printk("too many buffers behind, error not logged to buffer...\n");
+		goto exit_tasklet;
+	}
+
+	if(la_readable) {
+	//	printk("readable %d head %d tail %d\n", la_readable, la_head, la_tail);
+	}
+
+	*gpio4 = *gpio4 | (0x1 << 7);
+
+	if(la_tail + la_readable >= RFNM_ADC_BUFCNT) {
+		dcache_inval_poc((unsigned char *) &rfnm_bufdesc_rx[la_tail], (unsigned char *) &rfnm_bufdesc_rx[RFNM_ADC_BUFCNT - 1]);
+		dcache_inval_poc((unsigned char *) &rfnm_bufdesc_rx[0], (unsigned char *) &rfnm_bufdesc_rx[la_tail - la_readable]);
+	} else {
+		dcache_inval_poc((unsigned char *) &rfnm_bufdesc_rx[la_tail], (unsigned char *) &rfnm_bufdesc_rx[la_tail + la_readable]);
+	}
+
+	
+	//dcache = (unsigned char *) &rfnm_bufdesc_rx[la_tail];
+	//dcache_inval_poc(dcache, dcache + SZ_64K /*sizeof(struct rfnm_bufdesc_rx)*/);
+	*gpio4 = *gpio4 & ~(0x1 << 7);
+
+	barrier();
+	
+ 	
+	*gpio4 = *gpio4 | (0x1 << 6);
+
+	for(int q = 0; q < la_readable; q++) {
+
+		//*gpio4 = *gpio4 | (0x1 << 5);
+		//*gpio4 = *gpio4 & ~(0x1 << 5);
+
+		uint32_t la_adc_id = smp_load_acquire(&rfnm_bufdesc_rx[la_tail].adc_id);
+		uint32_t la_adc_cc = rfnm_bufdesc_rx[la_tail].cc;
+
+		//printk("la_adc_cc %d adc_buf_cnt %d adc_buf %d head %d\n", 
+		//	la_adc_cc, rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id], rfnm_dev->rx_usb_cb.adc_buf[la_adc_id], rfnm_dev->rx_usb_cb.head);
+
+		if(la_adc_id > 4) {
+			printk("Why is this ADC %d? tail is %d axiq is %d\n", la_adc_id, la_tail, rfnm_bufdesc_rx[la_tail].axiq_done);
+			continue;
+		}
+
+		
+		if(rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id] == RFNM_RX_USB_BUF_MULTI) {
+			rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id] = 0;
+			rfnm_dev->rx_usb_cb.adc_buf[la_adc_id] = rfnm_dev->rx_usb_cb.head;
+			if(++rfnm_dev->rx_usb_cb.head == RFNM_RX_USB_BUF_SIZE) {
+				rfnm_dev->rx_usb_cb.head = 0;
+			}
+		}
+#if 1
+		//if(q == 0 && rfnm_dev->rx_usb_cb.adc_buf[la_adc_id] == 0)
+		//printk("adc_buf %d offset %d destbuf %lx srcbuf %lx\n", rfnm_dev->rx_usb_cb.adc_buf[la_adc_id], LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id], 
+		//	&rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].buf[LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]], rfnm_bufdesc_rx[la_tail].buf);
+#endif
+#if 0
+		
+		
+		rfnm_pack16to12_aarch64( (uint8_t *) &rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].buf[LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]], 
+					(uint8_t *) rfnm_bufdesc_rx[la_tail].buf, 
+					LA_RX_BASE_BUFSIZE / 1);
+
+		
+
+#endif
+
+
+#if 0
+		*gpio4 = *gpio4 | (0x1 << 6);
+		
+		pack16to12( (uint8_t *) &rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].buf[LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]], 
+					(uint8_t *) rfnm_bufdesc_rx[la_tail].buf, 
+					LA_RX_BASE_BUFSIZE / 1);
+
+		*gpio4 = *gpio4 & ~(0x1 << 6);
+#endif
+
+
+
+
+		if(!rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]) {
+			//rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].magic = 0x7ab8bd6f;
+			//rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].phytimer = rfnm_bufdesc_rx[la_tail].phytimer;
+		}
+
+
+			
+		
+		if(rfnm_dev->rx_la_cb.adc_cc[la_adc_id] != la_adc_cc) {
+
+			printk("cc mismatch on adc %d -> %d vs %d tail is %d axiq is %d | adc_buf_cnt %d adc_buf %d head %d\n", la_adc_id, 
+				la_adc_cc, rfnm_dev->rx_la_cb.adc_cc[la_adc_id], 
+				la_tail, rfnm_bufdesc_rx[la_tail].axiq_done,
+				rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id], rfnm_dev->rx_usb_cb.adc_buf[la_adc_id], rfnm_dev->rx_usb_cb.head);
+			rfnm_dev->rx_la_cb.adc_cc[la_adc_id] = la_adc_cc;
+		}
+		//la_adc_cc++;
+		rfnm_dev->rx_la_cb.adc_cc[la_adc_id]++;
+
+		if(++la_tail == RFNM_ADC_BUFCNT) {
+			la_tail = 0;
+		}
+
+		rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]++;
+	}
+
+	*gpio4 = *gpio4 & ~(0x1 << 6);
+	
+
+	rfnm_dev->rx_la_cb.tail = la_tail;
+
+	rfnm_m7_status->kernel_cache_flush_tail = la_tail;
+
+	
+	
+
+	//printk("head is at %d\n", rfnm_m7_status->rx_head);
+
+exit_tasklet: 
+	//spin_unlock(&rfnm_dev->rx_usb_cb.reader_lock);
+exit_tasklet_no_unlock:
+	
+	kernel_neon_end();
+	*gpio4 = *gpio4 & ~(0x1 << 4);
+	tasklet_schedule(&rfnm_tasklet);
+}
+
+#endif
+
+
 
 
 void callback_func(struct device *dev)
 {
+	#if 0
 	//struct la9310_dev *la9310_dev = (struct la9310_dev *)cookie;
 	
 	long long int time_processing_start, time_diff, data_rate, total_processing_time_diff;
@@ -469,23 +771,23 @@ void callback_func(struct device *dev)
 	//pack16to12(rfnm_iqflood_buf[next_iqflood_write_buf], block_writing_to->vaddr, RFNM_IQFLOOD_BUFSIZE);
 
 
-	spin_lock(&rfnm_dev->usb_cb.writer_lock);
+	spin_lock(&rfnm_dev->rx_usb_cb.writer_lock);
 
-	int head = rfnm_dev->usb_cb.head;
-	int tail = READ_ONCE(rfnm_dev->usb_cb.tail);
+	int head = rfnm_dev->rx_usb_cb.head;
+	int tail = READ_ONCE(rfnm_dev->rx_usb_cb.tail);
 
 	if(head < tail) {
 		head += RFNM_IQFLOOD_CBSIZE;
 	}
 
 	if(head - tail > (RFNM_IQFLOOD_BUFSIZE / 2)) {
-		rfnm_dev->usb_cb.reader_too_slow++;
+		rfnm_dev->rx_usb_cb.reader_too_slow++;
 	}
 
 	head = this_rcv_buf * RFNM_IQFLOOD_BUFSIZE;
 
-	smp_store_release(&rfnm_dev->usb_cb.head, head);
-	spin_unlock(&rfnm_dev->usb_cb.writer_lock);
+	smp_store_release(&rfnm_dev->rx_usb_cb.head, head);
+	spin_unlock(&rfnm_dev->rx_usb_cb.writer_lock);
 
 
 	if(1 && ++countdown_to_print >= 100) {
@@ -512,14 +814,15 @@ void callback_func(struct device *dev)
 
 		printk("t %lld (ms) work %lld (us) pkts %d, data %d (MB) rate %lld (MB/s) \ntotal pkts %d rs %d ws %d dropped %d head %d tail %d\n", 
 			time_diff / (1000 * 1000), total_processing_time_diff / (1000), packet_count_diff, 
-			received_data_diff / (1000*1000), data_rate, callback_cnt, rfnm_dev->usb_cb.reader_too_slow,
-			 rfnm_dev->usb_cb.writer_too_slow, dropped_count, rfnm_dev->usb_cb.head, rfnm_dev->usb_cb.tail);
+			received_data_diff / (1000*1000), data_rate, callback_cnt, rfnm_dev->rx_usb_cb.reader_too_slow,
+			 rfnm_dev->rx_usb_cb.writer_too_slow, dropped_count, rfnm_dev->rx_usb_cb.head, rfnm_dev->rx_usb_cb.tail);
 
 	}
 
 	total_processing_time += ktime_get() - time_processing_start;
 	*gpio4 = *gpio4 & ~(0x1 << 6);
-	tasklet_schedule(&rfnm_tasklet);
+	//tasklet_schedule(&rfnm_tasklet);
+	#endif
 }
 
 static irqreturn_t callback_func_0(int irq, void *dev) {
@@ -565,7 +868,7 @@ static void rfnm_submit_usb_req(struct usb_ep *ep, struct usb_request *req)
 	if (!ss)
 		return;
 
-	*gpio4 = *gpio4 | (0x1 << 1); *gpio4 = *gpio4 & ~(0x1 << 1);
+	//*gpio4 = *gpio4 | (0x1 << 1); *gpio4 = *gpio4 & ~(0x1 << 1);
 
 
 	switch (status) {
@@ -623,7 +926,7 @@ static void rfnm_submit_usb_req(struct usb_ep *ep, struct usb_request *req)
 	list_add_tail(&new_ele->head, &rfnm_usb_req_buffer->active);
 	spin_unlock_irq(&rfnm_usb_req_buffer->list_lock);
 
-	tasklet_schedule(&rfnm_tasklet);
+	//tasklet_schedule(&rfnm_tasklet);
 
 
 
@@ -693,15 +996,15 @@ static int __init la9310_rfnm_init(void)
 		}
 	}
 */	
-	rfnm_iqflood_vmem_nocache = ioremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE);
-	rfnm_iqflood_vmem = memremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE, MEMREMAP_WB ); 
+	//rfnm_iqflood_vmem_nocache = ioremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE);
+	//rfnm_iqflood_vmem = memremap(RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE, MEMREMAP_WB ); 
 
-	if(!rfnm_iqflood_vmem) {
-		dev_err(la9310_dev->dev, "Failed to map I/Q buffer\n");
-		err = ENOMEM;
-	}
+	//if(!rfnm_iqflood_vmem) {
+	//	dev_err(la9310_dev->dev, "Failed to map I/Q buffer\n");
+	//	err = ENOMEM;
+	//}
 
-	dev_info(la9310_dev->dev, "Mapped IQflood from %x to %p\n", RFNM_IQFLOOD_MEMADDR, rfnm_iqflood_vmem);
+	//dev_info(la9310_dev->dev, "Mapped IQflood from %x to %p\n", RFNM_IQFLOOD_MEMADDR, rfnm_iqflood_vmem);
 
 	gpio4_iomem = ioremap(0x30230000, SZ_4K);
 	gpio4 = (volatile unsigned int *) gpio4_iomem;
@@ -710,12 +1013,34 @@ static int __init la9310_rfnm_init(void)
 	// disable gpio4
 	gpio4 = kzalloc(SZ_4K, GFP_KERNEL);
 
-	spin_lock_init(&rfnm_dev->usb_cb.reader_lock);
-	spin_lock_init(&rfnm_dev->usb_cb.writer_lock);
+	rfnm_bufdesc_rx = (struct rfnm_bufdesc_rx *) memremap(0x96400000, SZ_64M, MEMREMAP_WB);
 
-	rfnm_dev->usb_cb.head = 0;
-	rfnm_dev->usb_cb.tail = 0;
+	//rfnm_rx_usb_buf = (struct rfnm_rx_usb_buf *) memremap(0x96400000 + (sizeof(struct rfnm_rx_usb_buf) * RFNM_ADC_BUFCNT), SZ_256M, MEMREMAP_WB);
 
+	dev_info(la9310_dev->dev, "Mapped rfnm_bufdesc_rx from %x to %lx size %d\n", 0x96400000, rfnm_bufdesc_rx, SZ_64M);
+
+	rfnm_rx_usb_buf = kzalloc((sizeof(struct rfnm_rx_usb_buf) * RFNM_RX_USB_BUF_SIZE), GFP_KERNEL);
+
+	dev_info(la9310_dev->dev, "Mapped rfnm_rx_usb_buf from %x to %lx size %d\n", 0x96400000 + (sizeof(struct rfnm_rx_usb_buf) * RFNM_ADC_BUFCNT), rfnm_rx_usb_buf, (sizeof(struct rfnm_rx_usb_buf) * RFNM_RX_USB_BUF_SIZE));
+
+	//rfnm_m7_status = (struct rfnm_m7_status *) memremap((0x00900000 + 0x1000), SZ_4K, MEMREMAP_WB);
+	rfnm_m7_status = (struct rfnm_m7_status *) ioremap((0x00900000 + 0x1000), SZ_4K);
+
+
+
+	spin_lock_init(&rfnm_dev->rx_usb_cb.reader_lock);
+	spin_lock_init(&rfnm_dev->rx_usb_cb.writer_lock);
+
+	rfnm_dev->rx_usb_cb.head = 0;
+	rfnm_dev->rx_usb_cb.cc = 0;
+	rfnm_dev->rx_usb_cb.usb_host_dropped = 0;
+	rfnm_dev->rx_la_cb.tail = 0;
+	
+	for(i = 0; i < 4; i++) {
+		rfnm_dev->rx_usb_cb.adc_buf[i] = 0;
+		rfnm_dev->rx_usb_cb.adc_buf_cnt[i] = RFNM_RX_USB_BUF_MULTI;
+		rfnm_dev->rx_la_cb.adc_cc[i] = 0;
+	}
 
 	rfnm_usb_req_buffer = kzalloc(sizeof(*rfnm_usb_req_buffer), GFP_KERNEL);
 	if (!rfnm_usb_req_buffer)
@@ -736,6 +1061,9 @@ static int __init la9310_rfnm_init(void)
 	if (err < 0)
 		dev_err(la9310_dev->dev, "Failed to register RFNM Callback\n");
 
+
+	tasklet_schedule(&rfnm_tasklet);
+
 	return err;
 }
 
@@ -755,6 +1083,9 @@ static void  __exit la9310_rfnm_exit(void)
 
 	kfree(rfnm_dev);
 	kfree(tmp_usb_buffer_copy_to_be_deprecated);
+	kfree(rfnm_rx_usb_buf);
+
+	tasklet_kill(&rfnm_tasklet);
 
 	/*usb_gadget_unregister_driver(&rfnm_usb_driver);*/
 }
