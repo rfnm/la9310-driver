@@ -77,8 +77,10 @@ void granita0_ant_b_attn_24(struct rfnm_dgb * dgb_dt);
 void granita0_ant_b_crossover(struct rfnm_dgb * dgb_dt);
 void granita0_ant_b_tx(struct rfnm_dgb * dgb_dt);
 
+void granita0_tx_loopback(struct rfnm_dgb * dgb_dt, int enable_weak_amplifier);
+
 void granita0_tx_band(struct rfnm_dgb * dgb_dt, int band);
-int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target);
+int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target, int is_loopback);
 
 
 

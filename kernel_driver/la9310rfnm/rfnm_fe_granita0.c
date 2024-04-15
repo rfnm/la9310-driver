@@ -170,8 +170,8 @@ void granita0_fa_filter_3200_4200(struct rfnm_dgb * dgb_dt) {
 	//printk("granita0_filter_3200_4200\n");
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_1, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G3L, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_2, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_3, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_2, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_3, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_4, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 1);
 }
@@ -182,8 +182,8 @@ void granita0_fa_filter_3000_5000(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G3L, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_2, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_3, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_4, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_4, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 0);
 }
 
 
@@ -354,7 +354,7 @@ void granita0_fb_filter_4900_5850(struct rfnm_dgb * dgb_dt) {
 }
 
 void granita0_fb_filter_4400_5000(struct rfnm_dgb * dgb_dt) {
-	//printk("granita0_filter_4400_5000\n");
+	printk("granita0_filter_4400_5000\n");
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_1, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G3L, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_2, 1);
@@ -364,24 +364,28 @@ void granita0_fb_filter_4400_5000(struct rfnm_dgb * dgb_dt) {
 }
 
 void granita0_fb_filter_3200_4200(struct rfnm_dgb * dgb_dt) {
-	//printk("granita0_filter_3200_4200\n");
+	printk("granita0_filter_3200_4200\n");
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_1, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G3L, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_2, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_3, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_2, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_3, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_4, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 1);
 }
 
 void granita0_fb_filter_3000_5000(struct rfnm_dgb * dgb_dt) {
-	//printk("granita0_filter_3000_5000\n");
+	printk("granita0_filter_3000_5000\n");
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_1, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G3L, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_2, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_3, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_4, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_4, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 0);
 }
+
+
+
+
 
 
 
@@ -418,18 +422,6 @@ void granita0_rffc_rx_1166_1229(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFBI2, 1);
 }
 
-
-
-void granita0_ant_a_loopback(struct rfnm_dgb * dgb_dt) {
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_T, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TI, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TS, 0);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_AO1, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_AO2, 0);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TA, 0);
-}
 
 void granita0_ant_a_through(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_A, 0);
@@ -496,21 +488,6 @@ void granita0_ant_a_tx(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_AI2, 0);
 
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_A, 1);
-}
-
-
-
-
-
-void granita0_ant_b_loopback(struct rfnm_dgb * dgb_dt) {
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_T, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TI, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TS, 1);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_BO1, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_BO2, 0);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TB, 1);
 }
 
 void granita0_ant_b_through(struct rfnm_dgb * dgb_dt) {
@@ -584,6 +561,73 @@ void granita0_ant_b_tx(struct rfnm_dgb * dgb_dt) {
 
 
 
+
+
+void granita0_tx_loopback(struct rfnm_dgb * dgb_dt, int enable_weak_amplifier) {
+	// this is the only function that can enable
+	// loopback. it also disables both amplifiers.
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_T, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL1I, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL1O, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S1_EN, 1);
+	
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2I, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2O, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S2_EN, 1);
+	
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T24I, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T12I, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6I, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6O, 0);
+
+
+	if(enable_weak_amplifier) {
+		// enable second 20 dBm amplifier
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2I, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2O, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S2_EN, 0);
+
+		
+		//rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T24I, 0);
+
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T12I, 0);
+
+		// enable 6 dB attenuation
+		//rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6I, 0);
+		//rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6O, 1);		
+	}
+	
+}
+
+void granita0_ant_a_loopback(struct rfnm_dgb * dgb_dt) {
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TI, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TS, 0);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_AO1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_AO2, 0);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TA, 0);
+}
+
+void granita0_ant_b_loopback(struct rfnm_dgb * dgb_dt) {
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TI, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TS, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_BO1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_BO2, 0);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_ANT_TB, 1);	
+}
+
+
+
+
+
+
+
 #define RFNM_GRANITA0_TX_BAND_1 (1)
 #define RFNM_GRANITA0_TX_BAND_2 (2)
 #define RFNM_GRANITA0_TX_BAND_3 (3)
@@ -595,6 +639,7 @@ void granita0_tx_band(struct rfnm_dgb * dgb_dt, int band) {
 		case RFNM_GRANITA0_TX_BAND_1:
 			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF1, 0);
 			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF2, 0);
+			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TRO, 0);
 			break;
 		case RFNM_GRANITA0_TX_BAND_2:
 			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF1, 0);
@@ -603,11 +648,11 @@ void granita0_tx_band(struct rfnm_dgb * dgb_dt, int band) {
 			break;
 		case RFNM_GRANITA0_TX_BAND_3:
 			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF1, 1);
-			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF2, 0);
+			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF2, 1);
 			break;
 		case RFNM_GRANITA0_TX_BAND_4:
 			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF1, 1);
-			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF2, 1);
+			rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TF2, 0);
 			break;
 	}
 
@@ -621,17 +666,20 @@ int16_t granita0_tx_manual_table [][2] = {
 	{10000, 2000}, // above max freq as last one
 };
 
-int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
+int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target, int is_loopback) {
 	target = target * 100;
 
 	int cur_power = 0;
 	int i = 0;
-	while(granita0_tx_manual_table[i][0] < freq) {
-		cur_power = -granita0_tx_manual_table[i][1];
-		i++;
-	}
+	//while(granita0_tx_manual_table[i][0] < freq) {
+	//	cur_power = -granita0_tx_manual_table[i][1];
+	//	i++;
+	//}
 
-	if(1 && target > cur_power) {
+	// if any of the receive or the transmit paths are in loopback mode
+	// disable both amplifiers, just to make sure
+
+	if(!is_loopback && target > cur_power) {
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL1I, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL1O, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S1_EN, 0);
@@ -642,13 +690,15 @@ int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S1_EN, 1);
 	}
 	
-	if(1 && target > cur_power) {
+	if(!is_loopback && target > cur_power) {
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2I, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2O, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S2_EN, 0);
 		cur_power += 2000;
 	} else {
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_TL2O, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_PA_S2_EN, 1);
 	}
 	
 	if(target < (cur_power - 2400)) {
@@ -678,7 +728,7 @@ int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6O, 0);
 	}
 	
-	//printk("%d vs ", cur_power);
+	printk("%d vs %d", target,  cur_power);
 	if(target > cur_power) {
 		return abs(target - cur_power);
 	} else {
@@ -688,11 +738,11 @@ int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 
 
 void granita0_tx_freqsel(struct rfnm_dgb * dgb_dt, int freq) {
-    if(freq < 1000) {
+    if(freq <= 1500) {
         granita0_tx_band(dgb_dt, RFNM_GRANITA0_TX_BAND_1);
-    } else if(freq < 3000) {
+    } else if(freq <= 3140) {
         granita0_tx_band(dgb_dt, RFNM_GRANITA0_TX_BAND_2);
-    } else if(freq < 5000) {
+    } else if(freq < 5100) {
         granita0_tx_band(dgb_dt, RFNM_GRANITA0_TX_BAND_3);
     } else {
         granita0_tx_band(dgb_dt, RFNM_GRANITA0_TX_BAND_4);
