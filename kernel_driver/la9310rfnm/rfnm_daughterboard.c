@@ -45,6 +45,8 @@
 
 struct rfnm_dgb *rfnm_dgb[2];
 volatile struct rfnm_m7_dgb *m7_dgb;
+volatile uint32_t *dcs_vmem;
+volatile uint32_t *gpout_vmem;
 
 int abs_ch_cnt = 0;
 
@@ -470,6 +472,15 @@ static ssize_t b_store(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, con
 
 		if(ch_obj->txrx == RFNM_RX) {
 			rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->path = path;
+			if(path == RFNM_PATH_LOOPBACK) {
+				// disable loopback for every other receive channel 
+				// because dgb driver reads the first loopback channel 
+				for(int q = 0; q < rfnm_dgb[ch_obj->dgb_id]->rx_ch_cnt; q++) {
+					if(q != ch_obj->dgb_ch_id && rfnm_dgb[ch_obj->dgb_id]->rx_ch[q]->path == RFNM_PATH_LOOPBACK) {
+						rfnm_dgb[ch_obj->dgb_id]->rx_ch[q]->path = RFNM_PATH_SMA_A;
+					}
+				}
+			}
 		} else {
 			rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->path = path;
 		}
@@ -630,6 +641,33 @@ void rfnm_dgb_reg(struct rfnm_dgb *dgb_dt) {
 			goto ch_reg_error;		
 	}
 
+	if(dgb_slot == 0) {
+		dcs_vmem[HSDAC_CFGCTL1] = (dcs_vmem[HSDAC_CFGCTL1] & 0xfffff0ff) | ((dgb_dt->dac_ifs & 0xfl) << 8);
+	}
+
+	uint32_t gpout4 = gpout_vmem[GP_OUT_4];
+	
+	for(i = 0; i < 2; i++) {
+		gpout4 &= ~(0x1 << RFNM_ADC_MAP[i + (dgb_dt->dgb_id << 2)]);
+		if(dgb_dt->adc_iqswap[i] || (
+			!dgb_dt->adc_iqswap[i] && dgb_dt->dgb_id == 0 && i == 1
+			)) {
+			gpout4 |= 0x1 << RFNM_ADC_MAP[i + (dgb_dt->dgb_id << 2)];
+		}
+	}
+
+	if(dgb_slot == 0) {
+		uint32_t gpout7 = gpout_vmem[GP_OUT_7];
+		gpout7 &= ~(0x1 << 3);
+		if(dgb_dt->dac_iqswap[0]) {
+			gpout7 |= 0x1 << 3;
+		}
+		gpout_vmem[GP_OUT_7] = gpout7;
+	}
+
+	gpout_vmem[GP_OUT_4] = gpout4;
+	
+
 	return;
 ch_reg_error:
 	printk("failed to register kset\n");
@@ -665,6 +703,17 @@ static __init int rfnm_daughterboard_init(void)
 	void __iomem *gpio_iomem;
 	gpio_iomem = ioremap(0x00800070, SZ_4K);
 	m7_dgb = (void *) gpio_iomem;
+
+	gpio_iomem = ioremap(RFNM_LA_DCS_PHY_ADDR, SZ_16K);
+	dcs_vmem = (void *) gpio_iomem;
+
+	gpio_iomem = ioremap(RFNM_LA_GPOUT_PHY_ADDR, SZ_16K);
+	gpout_vmem = (void *) gpio_iomem;
+
+	// on boot, enable iq-swap on rx-2/primary (maps to 4)
+	gpout_vmem[GP_OUT_4] |= 0x1 << 27;
+
+	
 /*
 	struct device *dev;
 	int err;
