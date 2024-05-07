@@ -118,26 +118,32 @@ void rfnm_rx_ch_get(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 int rfnm_granita_tdd(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_rx_ch * rx_ch) {
 	int ret;
+	rfnm_api_failcode ecode = RFNM_API_OK;
 	printk("RFNM: TDD rx %d tx %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
 	ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
 	if(ret) {
 		printk("SiAPILoopback wouldn't return nice things\n");
-		return -1;
+		ecode = RFNM_API_TUNE_FAIL;
+		goto fail;
 	}
 
 	ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, rx_ch->gain);
 	if(ret) {
 		printk("SiAPIRXGAIN failed\n");
-		return -1;
+		ecode = RFNM_API_GAIN_FAIL;
+		goto fail;
 	}
 
 	ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, /*tx_ch->power*/ 48);
 	if(ret) {
 		printk("SiAPITXGAIN wouldn't return nice things\n");
-		return -1;
+		ecode = RFNM_API_GAIN_FAIL;
+		goto fail;
 	}
 
-	return 0;	
+	return 0;
+fail:
+	return -ecode;	
 }
 
 
@@ -145,6 +151,7 @@ int rfnm_granita_tdd(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, str
 int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 
 	int ret;
+	rfnm_api_failcode ecode = RFNM_API_OK;
 
 	granita0_tx_freqsel(dgb_dt, HZ_TO_MHZ(tx_ch->freq));
 	
@@ -186,13 +193,15 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->iq_lpf_bw));
 		if(ret) {
 			printk("SiAPIPowerUpTX wouldn't return nice things\n");
-			return -1;
+			ecode = RFNM_API_TUNE_FAIL;
+			goto fail;
 		}
 
 		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, 48);
 		if(ret) {
 			printk("SiAPITXGAIN wouldn't return nice things\n");
-			return -1;
+			ecode = RFNM_API_GAIN_FAIL;
+			goto fail;
 		}
 	}
 	else if(tx_ch->enable != RFNM_CH_ON_TDD) {
@@ -206,25 +215,29 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 		}
 		if(!rx_freq) {
 			printk("You need to set the RX frequency on a RX channel using the loopback path before calling for tx loopback\n");
-			return -1;
+			ecode = RFNM_API_TUNE_FAIL;
+			goto fail;
 		}
 		printk("%d %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
 		ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
 		if(ret) {
 			printk("SiAPILoopback wouldn't return nice things\n");
-			return -1;
+			ecode = RFNM_API_TUNE_FAIL;
+			goto fail;
 		}
 
 		ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, 0);
 		if(ret) {
 			printk("SiAPIRXGAIN failed\n");
+			ecode = RFNM_API_GAIN_FAIL;
 			goto fail;
 		}
 
 		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, tx_ch->power);
 		if(ret) {
 			printk("SiAPITXGAIN wouldn't return nice things\n");
-			return -1;
+			ecode = RFNM_API_GAIN_FAIL;
+			goto fail;
 		}
 	}
 
@@ -242,15 +255,10 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 	}
 
 	memcpy(dgb_dt->tx_s[0], dgb_dt->tx_ch[0], sizeof(struct rfnm_api_tx_ch));
-	
-		
-
-
-
 
 	return 0;
 fail: 
-	return -EAGAIN;
+	return -ecode;
 }
 
 int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
@@ -259,7 +267,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	int dbm = rx_ch->gain;
 	int ret;
 	int gr_api_id;
-	
+	rfnm_api_failcode ecode = RFNM_API_OK;
 
 	if(rx_ch->dgb_ch_id == 0) {
 		if(rx_ch->path == RFNM_PATH_SMA_A) {
@@ -351,7 +359,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		// TX command takes care of RX init when in loopback mode
 		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(rx_ch->freq), parse_granita_iq_lpf(rx_ch->iq_lpf_bw));
 		if(ret) {
-			return -1;
+			ecode = RFNM_API_TUNE_FAIL;
+			goto fail;
 			//printf("SiAPIPowerUpRX wouldn't return nice things\n");
 		}
 
@@ -364,6 +373,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], gr_api_id, dbm);
 			if(ret) {
 				printk("SiAPIRXGAIN failed\n");
+				ecode = RFNM_API_GAIN_FAIL;
 				goto fail;
 			}
 		}
@@ -386,7 +396,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	
 fail: 
-	return -EAGAIN;
+	return -ecode;
 }
 
 
@@ -429,7 +439,7 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	const struct spi_device_id *id = spi_get_device_id(spi);
 	int i, ret;
 
-	dgb_dt = devm_kzalloc(dev, sizeof(*dgb_dt), GFP_KERNEL);
+	dgb_dt = devm_kzalloc(dev, sizeof(struct rfnm_dgb), GFP_KERNEL);
 	if(!dgb_dt) {
 		return -ENOMEM;
 	}
@@ -474,26 +484,33 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	struct rfnm_api_tx_ch *tx_ch, *tx_s;
 	struct rfnm_api_rx_ch *rx_ch[2], *rx_s[2];
 
-	tx_ch = devm_kzalloc(dev, sizeof(*tx_ch), GFP_KERNEL);
-	rx_ch[0] = devm_kzalloc(dev, sizeof(*rx_ch), GFP_KERNEL);
-	rx_ch[1] = devm_kzalloc(dev, sizeof(*rx_ch), GFP_KERNEL);
-	tx_s = devm_kzalloc(dev, sizeof(*tx_ch), GFP_KERNEL);
-	rx_s[0] = devm_kzalloc(dev, sizeof(*rx_ch), GFP_KERNEL);
-	rx_s[1] = devm_kzalloc(dev, sizeof(*rx_ch), GFP_KERNEL);
+	tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+	rx_ch[0] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
+	rx_ch[1] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
+	tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+	rx_s[0] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
+	rx_s[1] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
+	
 	if(!tx_ch || !rx_ch[0] || !rx_ch[1] || !tx_s || !rx_s[0] || !rx_s[1]) {
 		return -ENOMEM;
 	}
 
-	tx_ch->freq_max = 6300 MHZ_TO_HZ;
-	tx_ch->freq_min = 600 MHZ_TO_HZ;
+	tx_ch->freq_max = MHZ_TO_HZ(6300);
+	tx_ch->freq_min = MHZ_TO_HZ(600);
+	tx_ch->path_preferred = RFNM_PATH_SMA_B;
+	tx_ch->dac_id = 0;
 	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
 
-	rx_ch[0]->freq_max = 6300 MHZ_TO_HZ;
-	rx_ch[0]->freq_min = 600 MHZ_TO_HZ;
+	rx_ch[0]->freq_max = MHZ_TO_HZ(6300);
+	rx_ch[0]->freq_min = MHZ_TO_HZ(600);
+	rx_ch[0]->path_preferred = RFNM_PATH_SMA_A;
+	rx_ch[0]->adc_id = 1;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[0], rx_s[0]);
 	
-	rx_ch[1]->freq_max = 6300 MHZ_TO_HZ;
-	rx_ch[1]->freq_min = 600 MHZ_TO_HZ;
+	rx_ch[1]->freq_max = MHZ_TO_HZ(6300);
+	rx_ch[1]->freq_min = MHZ_TO_HZ(600);
+	rx_ch[1]->path_preferred = RFNM_PATH_SMA_B;
+	rx_ch[1]->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[1], rx_s[1]);
 
 /*
