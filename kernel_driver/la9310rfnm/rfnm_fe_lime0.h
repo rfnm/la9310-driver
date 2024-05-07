@@ -31,7 +31,7 @@ void lime0_filter_2300_2690(struct rfnm_dgb * dgb_dt);
 void lime0_filter_1574_1605(struct rfnm_dgb * dgb_dt) ;
 
 void lime0_filter_1166_1229(struct rfnm_dgb * dgb_dt);
-void lime0_loopback_tmpname(struct rfnm_dgb * dgb_dt);
+void lime0_loopback(struct rfnm_dgb * dgb_dt);
 
 void lime0_tx_band(struct rfnm_dgb * dgb_dt, int band);
 void lime0_tx_lpf(struct rfnm_dgb * dgb_dt, int freq);
@@ -84,6 +84,7 @@ void lime0_ant_attn_24(struct rfnm_dgb * dgb_dt);
 
 #define RFNM_LIME0_ANT_BIAS (RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q0)
 #define RFNM_LIME0_ANT_T 	(RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q1)
+#define RFNM_LIME0_ANT_E 	(RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q2)
 #define RFNM_LIME0_ANT_A 	(RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q3)
 #define RFNM_LIME0_AI1 		(RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q4)
 #define RFNM_LIME0_AI2 		(RFNM_LATCH1 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q5)
@@ -115,18 +116,7 @@ void lime0_ant_attn_24(struct rfnm_dgb * dgb_dt);
 #define RFNM_LIME0_TFB1 	(RFNM_LATCH3 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q5)
 #define RFNM_LIME0_TFA		(RFNM_LATCH3 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q6)
 #define RFNM_LIME0_TFI	 	(RFNM_LATCH3 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q7)
-/* v0 */
-#define RFNM_LIME0_PA_S2	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q0)
-#define RFNM_LIME0_TL2O 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q1)
-#define RFNM_LIME0_TL1O 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q2)
-#define RFNM_LIME0_TL2I 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q3)
-#define RFNM_LIME0_PA_S1	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q4)
-#define RFNM_LIME0_TL1I 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q5)
-#define RFNM_LIME0_T6O		(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q6)
-#define RFNM_LIME0_T6I	 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q7)
 
-/* v1 */ 
-/*
 #define RFNM_LIME0_PA_S2	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q0)
 #define RFNM_LIME0_TL2I 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q1)
 #define RFNM_LIME0_TL1O 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q2)
@@ -135,7 +125,5 @@ void lime0_ant_attn_24(struct rfnm_dgb * dgb_dt);
 #define RFNM_LIME0_TL1I 	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q5)
 #define RFNM_LIME0_T6O		(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q6)
 #define RFNM_LIME0_PA_S1	(RFNM_LATCH3 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q7)
-*/
-
 
 #endif /* FE_LIME_H_ */

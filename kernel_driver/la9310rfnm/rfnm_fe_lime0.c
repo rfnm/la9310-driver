@@ -25,17 +25,18 @@ void lime0_fm_notch(struct rfnm_dgb * dgb_dt, int en) {
 	if(en) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 1);
+		//printk("notch on\n");
 	} else {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+		//printk("notch off\n");
 	}
 }
 
 void lime0_filter_0_2(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_0_2\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 0); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 0);
@@ -47,8 +48,7 @@ void lime0_filter_0_2(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_2_12(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_2_12\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 0); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 1);
@@ -60,8 +60,7 @@ void lime0_filter_2_12(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_12_30(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_12_30\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 0); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 1);
@@ -73,8 +72,7 @@ void lime0_filter_12_30(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_30_60(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_30_60\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 0); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 0);
@@ -86,8 +84,7 @@ void lime0_filter_30_60(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_60_120(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_60_120\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 1); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 0);
@@ -100,8 +97,7 @@ void lime0_filter_60_120(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_120_250(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_120_250\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 1); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 1);
@@ -114,8 +110,7 @@ void lime0_filter_120_250(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_250_480(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_250_480\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 1); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 1);
@@ -128,8 +123,7 @@ void lime0_filter_250_480(struct rfnm_dgb * dgb_dt) {
 void lime0_filter_480_1000(struct rfnm_dgb * dgb_dt) {
 	//printk("lime0_filter_480_1000\n");
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 0);
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA2, 1); // by default, disable the notch
-	//rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA3, 0);
+	
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA4, 1); // G1
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA5, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA6, 0);
@@ -214,23 +208,22 @@ void lime0_filter_1166_1229(struct rfnm_dgb * dgb_dt) {
 	// do not enable second amp on GPS line
 }
 
-void lime0_loopback_tmpname(struct rfnm_dgb * dgb_dt) {
+void lime0_loopback(struct rfnm_dgb * dgb_dt) {
 // loopback
 
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFI, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 0);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB2, 0);
-		//rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24I, 0);
-		//rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24O, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24I, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24O, 0);
+		//rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24I, 1);
+		//rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24O, 0);
+
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24I, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T24O, 1);
+
+
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T12I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T12O, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T6I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T6O, 0);
 
-#if 0
+#if 1
 		// disable pa
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL1I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL1O, 0);
@@ -253,41 +246,16 @@ void lime0_loopback_tmpname(struct rfnm_dgb * dgb_dt) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO2, 0);
 
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_FA1, 1);
 
-
-
-
-
-
-		// actually, send out to SMA
-
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_T, 0);
-
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_AI1, 0);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_AI2, 0);
-
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_A, 1);
-
-		// enable second pa
-
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2I, 0);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2O, 1);
-
+		
+#if 0
 		// disable both PAs
-
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL1I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL1O, 0);
 
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2O, 0);
-
-
-
-
-		//rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFI, 0);
-
-
+#endif
 }
 
 
@@ -312,10 +280,14 @@ void lime0_tx_lpf(struct rfnm_dgb * dgb_dt, int freq) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB2, 1);
-	} else if(freq < 200) { //200
+	} else if(freq < 200) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB2, 1);
+	} else if(freq < 400) {
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB2, 0);
 	} else if(freq < 700) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 0);
@@ -331,7 +303,7 @@ void lime0_tx_lpf(struct rfnm_dgb * dgb_dt, int freq) {
 	} else {
 		// bypass filter
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFA, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB1, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TFB2, 0);
 	}
 }
@@ -377,6 +349,8 @@ int lime0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		cur_power = -lime0_tx_manual_table[i][1];
 		i++;
 	}
+
+	cur_power = 0;
 
 	if(target > cur_power) {
 		//printk("+20");
@@ -430,7 +404,7 @@ int lime0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T6O, 0);
 	}
 	
-	//printk("%d vs %d", target, cur_power);
+	printk("target pwr %d vs cur %d", target, cur_power);
 	if(target > cur_power) {
 		return abs(target - cur_power);
 	} else {
@@ -448,7 +422,7 @@ void lime0_ant_tx(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_A, 1);
 }
 
-
+/*
 void lime0_ant_loopback(struct rfnm_dgb * dgb_dt) {
 
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_T, 1);
@@ -456,7 +430,7 @@ void lime0_ant_loopback(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO2, 0);
 
-}
+}*/
 
 void lime0_ant_through(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_A, 0);
