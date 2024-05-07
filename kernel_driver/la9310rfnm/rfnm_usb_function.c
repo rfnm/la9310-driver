@@ -60,12 +60,22 @@ static struct usb_interface_assoc_descriptor iad_desc = {
 	.bFunctionProtocol = 0,
 };
 
+static struct usb_interface_descriptor source_sink_intf_hs0 = {
+	.bLength =		USB_DT_INTERFACE_SIZE,
+	.bDescriptorType =	USB_DT_INTERFACE,
+
+	.bAlternateSetting =	0,
+	.bNumEndpoints =	2,
+	.bInterfaceClass =	USB_CLASS_VENDOR_SPEC,
+	/* .iInterface		= DYNAMIC */
+};
+
 static struct usb_interface_descriptor source_sink_intf_alt0 = {
 	.bLength =		USB_DT_INTERFACE_SIZE,
 	.bDescriptorType =	USB_DT_INTERFACE,
 
 	.bAlternateSetting =	0,
-	.bNumEndpoints =	8,
+	.bNumEndpoints =	(2 * RFNM_EP_CNT),
 	.bInterfaceClass =	USB_CLASS_VENDOR_SPEC,
 	/* .iInterface		= DYNAMIC */
 };
@@ -91,13 +101,71 @@ static struct usb_endpoint_descriptor fs_sink_desc_proto = {
 static struct usb_endpoint_descriptor fs_source_desc[RFNM_EP_CNT];
 static struct usb_endpoint_descriptor fs_sink_desc[RFNM_EP_CNT];
 
+static struct usb_endpoint_descriptor fs_loop_sink_desc = {
+	.bLength =		USB_DT_ENDPOINT_SIZE,
+	.bDescriptorType =	USB_DT_ENDPOINT,
+
+	.bEndpointAddress =	USB_DIR_OUT,
+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+};
+
 static struct usb_descriptor_header *fs_source_sink_descs[] = {
+	(struct usb_descriptor_header *) &source_sink_intf_alt0,
+	
+	(struct usb_descriptor_header *) &fs_source_desc[0],
+	(struct usb_descriptor_header *) &fs_sink_desc[0],
+
+	(struct usb_descriptor_header *) &fs_source_desc[1],
+	(struct usb_descriptor_header *) &fs_sink_desc[1],
+
+	(struct usb_descriptor_header *) &fs_source_desc[2],
+	(struct usb_descriptor_header *) &fs_sink_desc[2],
+
+	(struct usb_descriptor_header *) &fs_source_desc[3],
+	(struct usb_descriptor_header *) &fs_sink_desc[3],
 	NULL,
 };
 
 /* high speed support: */
 
+static struct usb_endpoint_descriptor hs_source_desc[RFNM_EP_CNT];
+static struct usb_endpoint_descriptor hs_sink_desc[RFNM_EP_CNT];
+
+static struct usb_endpoint_descriptor hs_source_desc_proto = {
+	.bLength =		USB_DT_ENDPOINT_SIZE,
+	.bDescriptorType =	USB_DT_ENDPOINT,
+
+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+	.wMaxPacketSize =	cpu_to_le16(512),
+};
+
+static struct usb_endpoint_descriptor hs_sink_desc_proto = {
+	.bLength =		USB_DT_ENDPOINT_SIZE,
+	.bDescriptorType =	USB_DT_ENDPOINT,
+
+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
+	.wMaxPacketSize =	cpu_to_le16(512),
+};
+
+
+
 static struct usb_descriptor_header *hs_source_sink_descs[] = {
+	//(struct usb_descriptor_header *) &source_sink_intf_alt0,
+	
+	(struct usb_descriptor_header *) &source_sink_intf_alt0,
+	
+	(struct usb_descriptor_header *) &hs_source_desc[0],
+	(struct usb_descriptor_header *) &hs_sink_desc[0],
+
+	(struct usb_descriptor_header *) &hs_source_desc[1],
+	(struct usb_descriptor_header *) &hs_sink_desc[1],
+
+	(struct usb_descriptor_header *) &hs_source_desc[2],
+	(struct usb_descriptor_header *) &hs_sink_desc[2],
+
+	(struct usb_descriptor_header *) &hs_source_desc[3],
+	(struct usb_descriptor_header *) &hs_sink_desc[3],
+
 	NULL,
 };
 
@@ -244,17 +312,25 @@ sourcesink_bind(struct usb_configuration *c, struct usb_function *f)
 	}
 
 
-
-	/* allocate interface ID(s) */
 	id = usb_interface_id(c, f);
 	if (id < 0)
 		return id;
+	//source_sink_intf_hs0.bInterfaceNumber = id;
+
+	/* allocate interface ID(s) */
+	//id = usb_interface_id(c, f);
+	//if (id < 0)
+	//	return id;
 	source_sink_intf_alt0.bInterfaceNumber = id;
+	// ?? 
+	
 
 	for(i = 0; i < RFNM_EP_CNT; i++) {
 		
 		memcpy(&fs_source_desc[i], &fs_source_desc_proto, sizeof(struct usb_endpoint_descriptor));
 		memcpy(&fs_sink_desc[i], &fs_sink_desc_proto, sizeof(struct usb_endpoint_descriptor));
+
+		
 
 		ss->in_ep[i] = usb_ep_autoconfig(cdev->gadget, &fs_source_desc[i]);
 		if (!ss->in_ep[i])
@@ -266,6 +342,13 @@ sourcesink_bind(struct usb_configuration *c, struct usb_function *f)
 	}
 
 	for(i = 0; i < RFNM_EP_CNT; i++) {
+
+		memcpy(&hs_source_desc[i], &hs_source_desc_proto, sizeof(struct usb_endpoint_descriptor));
+		memcpy(&hs_sink_desc[i], &hs_sink_desc_proto, sizeof(struct usb_endpoint_descriptor));
+
+		hs_source_desc[i].bEndpointAddress = fs_source_desc[i].bEndpointAddress;
+		hs_sink_desc[i].bEndpointAddress = fs_sink_desc[i].bEndpointAddress;
+
 		memcpy(&ss_source_desc[i], &ss_source_desc_proto, sizeof(struct usb_endpoint_descriptor));
 		memcpy(&ss_sink_desc[i], &ss_sink_desc_proto, sizeof(struct usb_endpoint_descriptor));
 
@@ -428,9 +511,10 @@ static void source_sink_complete(struct usb_ep *ep, struct usb_request *req)
 	}
 }
 
-static void rfnm_submit_usb_req(struct usb_ep *ep, struct usb_request *req);
+static void rfnm_submit_usb_req_in(struct usb_ep *ep, struct usb_request *req);
+static void rfnm_submit_usb_req_out(struct usb_ep *ep, struct usb_request *req);
 
-static int source_sink_start_ep(struct f_sourcesink *ss, struct usb_ep *ep)
+static int source_sink_start_ep_in(struct f_sourcesink *ss, struct usb_ep *ep)
 {
 	struct usb_request	*req;
 	int	i, size, qlen, status = 0;
@@ -439,17 +523,56 @@ static int source_sink_start_ep(struct f_sourcesink *ss, struct usb_ep *ep)
 	// probably because original driver had fixed qlen=1
 	// I have a feeling that qlen=8 might have better performances
 	
-	qlen = 1;
-	size = 4096*32;
+	qlen = 16;
+	size = RFNM_USB_RX_PACKET_SIZE;
 
-	printk("qlen %d size %d\n", qlen, size);
+	printk("in ep qlen %d size %d\n", qlen, size);
 
 	for (i = 0; i < qlen; i++) {
 		req = ss_alloc_ep_req(ep, size);
 		if (!req)
 			return -ENOMEM;
 
-		req->complete = rfnm_submit_usb_req;
+		req->complete = rfnm_submit_usb_req_in;
+		//if (is_in)
+		//	reinit_write_data(ep, req);
+		//else if (ss->pattern != 2)
+		//	memset(req->buf, 0x55, req->length);
+
+		status = usb_ep_queue(ep, req, GFP_ATOMIC);
+		if (status) {
+			struct usb_composite_dev	*cdev;
+
+			cdev = ss->function.config->cdev;
+			ERROR(cdev, "error starting endpoint --> %d\n", status);
+			free_ep_req(ep, req);
+			return status;
+		}
+	}
+
+	return status;
+}
+
+static int source_sink_start_ep_out(struct f_sourcesink *ss, struct usb_ep *ep)
+{
+	struct usb_request	*req;
+	int	i, size, qlen, status = 0;
+	
+	// qlen = 8 breaks after reloading the driver (host app is reporting not in sync)
+	// probably because original driver had fixed qlen=1
+	// I have a feeling that qlen=8 might have better performances
+	
+	qlen = 16;
+	size = RFNM_USB_TX_PACKET_SIZE;
+
+	printk("out ep qlen %d size %d\n", qlen, size);
+
+	for (i = 0; i < qlen; i++) {
+		req = ss_alloc_ep_req(ep, size);
+		if (!req)
+			return -ENOMEM;
+
+		req->complete = rfnm_submit_usb_req_out;
 		//if (is_in)
 		//	reinit_write_data(ep, req);
 		//else if (ss->pattern != 2)
@@ -504,7 +627,7 @@ enable_source_sink(struct usb_composite_dev *cdev, struct f_sourcesink *ss,
 			return result;
 		ep->driver_data = ss;
 
-		result = source_sink_start_ep(ss, ep);
+		result = source_sink_start_ep_in(ss, ep);
 		if (result < 0) {
 			usb_ep_disable(ep);
 			return result;
@@ -519,7 +642,7 @@ enable_source_sink(struct usb_composite_dev *cdev, struct f_sourcesink *ss,
 			goto fail;
 		ep->driver_data = ss;
 
-		result = source_sink_start_ep(ss, ep);
+		result = source_sink_start_ep_out(ss, ep);
 		if (result < 0) {
 			usb_ep_disable(ep);
 			return result;
@@ -563,6 +686,20 @@ static void sourcesink_disable(struct usb_function *f)
 }
 
 /*-------------------------------------------------------------------------*/
+
+static void rfnm_setup_complete_tx(struct usb_ep *ep, struct usb_request *req) {
+
+	struct rfnm_dev_tx_ch_list r_chlist;
+	memcpy(&r_chlist, req->buf, req->length);
+	rfnm_apply_dev_tx_chlist(&r_chlist);
+}
+
+static void rfnm_setup_complete_rx(struct usb_ep *ep, struct usb_request *req) {
+
+	struct rfnm_dev_rx_ch_list r_chlist;
+	memcpy(&r_chlist, req->buf, req->length);
+	rfnm_apply_dev_rx_chlist(&r_chlist);	
+}
 
 static int sourcesink_setup(struct usb_function *f,
 		const struct usb_ctrlrequest *ctrl)
@@ -645,18 +782,88 @@ unknown:
 		if (value < 0) {
 			ERROR(c->cdev, "source/sink response, err %d\n", value);
 		}
-			
 	}
-/*
-	if( (ctrl->bRequestType == 0x40 && ctrl->wValue == RFNM_SET_TX_CH_LIST)) {
+
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_TX_CH_LIST)) {
 		req->length = w_length;
 		req->zero = 0;
+		struct rfnm_dev_tx_ch_list r_chlist;
+		rfnm_populate_dev_tx_chlist(&r_chlist);
+		memcpy(req->buf, &r_chlist, w_length);
+		//printk("length: %d\n", w_length);
 		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
 		if (value < 0) {
 			ERROR(c->cdev, "source/sink response, err %d\n", value);
 		}
 	}
-*/
+
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_RX_CH_LIST)) {
+		req->length = w_length;
+		req->zero = 0;
+		struct rfnm_dev_rx_ch_list r_chlist;
+		rfnm_populate_dev_rx_chlist(&r_chlist);
+		memcpy(req->buf, &r_chlist, w_length);
+		//printk("length: %d\n", w_length);
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+	}
+
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_SET_RESULT)) {
+		req->length = w_length;
+		req->zero = 0;
+		struct rfnm_dev_get_set_result r_res;
+		rfnm_populate_dev_set_res(&r_res);
+		memcpy(req->buf, &r_res, w_length);
+		//printk("length: %d\n", w_length);
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+	}
+
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_DEV_STATUS)) {
+		req->length = w_length;
+		req->zero = 0;
+		struct rfnm_dev_status r_stat;
+		rfnm_populate_dev_status(&r_stat);
+		memcpy(req->buf, &r_stat, w_length);
+		//printk("length: %d\n", w_length);
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+	}
+
+	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_SM_RESET)) {
+		req->length = w_length;
+		req->zero = 0;
+		//struct rfnm_dev_status r_stat;
+		//rfnm_populate_dev_status(&r_stat);
+		rfnm_restart_sm(1);
+		//memcpy(req->buf, &r_stat, w_length);
+		//printk("length: %d\n", w_length);
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+	}
+
+	if( (ctrl->bRequestType == 0x40 && (ctrl->wValue == RFNM_SET_TX_CH_LIST || ctrl->wValue == RFNM_SET_RX_CH_LIST))) {
+		req->length = w_length;
+		req->zero = 0;
+		struct rfnm_dev_tx_ch_list r_chlist;
+		if(ctrl->wValue == RFNM_SET_TX_CH_LIST) {
+			req->complete = rfnm_setup_complete_tx;
+		} else if(ctrl->wValue == RFNM_SET_RX_CH_LIST) {
+			req->complete = rfnm_setup_complete_rx;
+		}
+		value = usb_ep_queue(c->cdev->gadget->ep0, req, GFP_ATOMIC);
+		if (value < 0) {
+			ERROR(c->cdev, "source/sink response, err %d\n", value);
+		}
+	}
 
 	/* device either stalls (value < 0) or reports success */
 	return value;
@@ -681,7 +888,8 @@ static bool func_req_match(struct usb_function *f,
 
 	if(	creq->wValue != RFNM_GET_DEV_HWINFO && creq->wValue != RFNM_GET_TX_CH_LIST && 
 		creq->wValue != RFNM_SET_TX_CH_LIST && creq->wValue != RFNM_GET_RX_CH_LIST &&
-		creq->wValue != RFNM_SET_RX_CH_LIST ) {
+		creq->wValue != RFNM_GET_SET_RESULT && creq->wValue != RFNM_GET_DEV_STATUS &&
+		creq->wValue != RFNM_SET_RX_CH_LIST && creq->wValue != RFNM_GET_SM_RESET ) {
 		return false;
 	}
 
