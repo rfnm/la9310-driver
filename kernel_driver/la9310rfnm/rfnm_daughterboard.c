@@ -44,9 +44,13 @@
 #include <linux/rfnm-shared.h>
 
 struct rfnm_dgb *rfnm_dgb[2];
+struct rfnm_bootconfig *bootcfg;
 volatile struct rfnm_m7_dgb *m7_dgb;
 volatile uint32_t *dcs_vmem;
 volatile uint32_t *gpout_vmem;
+
+uint8_t rfnm_rx_adc_s[4];
+uint8_t rfnm_tx_dac_s;
 
 int abs_ch_cnt = 0;
 
@@ -75,9 +79,226 @@ EXPORT_SYMBOL(rfnm_dgb_reg_tx_ch);
 
 
 void rfnm_populate_dev_hwinfo(struct rfnm_dev_hwinfo * r_hwinfo) {
-	r_hwinfo->motherboard.board_id = 10;
+	int i;
+
+	memset(r_hwinfo, 0, sizeof(struct rfnm_dev_hwinfo));
+
+	r_hwinfo->protocol_version = 1;
+	r_hwinfo->clock.dcs_clk = MHZ_TO_HZ(122.88);
+
+	r_hwinfo->motherboard.board_id = bootcfg->motherboard_eeprom.board_id;
+	r_hwinfo->motherboard.board_revision_id = bootcfg->motherboard_eeprom.board_revision_id;
+	
+	memcpy(&r_hwinfo->motherboard.serial_number[0], &bootcfg->motherboard_eeprom.serial_number[0], 9);
+	memcpy(&r_hwinfo->motherboard.mac_addr[0], &bootcfg->motherboard_eeprom.mac_addr[0], 6);
+	memcpy(&r_hwinfo->motherboard.user_readable_name[0], RFNM_BOARD_ID_TO_USER_READABLE_NAME[bootcfg->motherboard_eeprom.board_id], 30);
+	
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+
+		r_hwinfo->motherboard.tx_ch_cnt += rfnm_dgb[i]->tx_ch_cnt;
+		r_hwinfo->motherboard.rx_ch_cnt += rfnm_dgb[i]->rx_ch_cnt;
+
+		r_hwinfo->daughterboard[i].tx_ch_cnt = rfnm_dgb[i]->tx_ch_cnt;
+		r_hwinfo->daughterboard[i].rx_ch_cnt = rfnm_dgb[i]->rx_ch_cnt;
+
+		r_hwinfo->daughterboard[i].board_id = bootcfg->daughterboard_eeprom[i].board_id;
+		r_hwinfo->daughterboard[i].board_revision_id = bootcfg->daughterboard_eeprom[i].board_revision_id;
+		memcpy(&r_hwinfo->daughterboard[i].serial_number[0], &bootcfg->daughterboard_eeprom[i].serial_number[0], 9);
+		memcpy(&r_hwinfo->daughterboard[i].user_readable_name[0], RFNM_BOARD_ID_TO_USER_READABLE_NAME[bootcfg->daughterboard_eeprom[i].board_id], 30);
+	}
+
+
+	
+	// int16_t r_hwinfo->temperature;;
+	
+
+	
 }
 EXPORT_SYMBOL(rfnm_populate_dev_hwinfo);
+
+
+void rfnm_populate_dev_tx_chlist(struct rfnm_dev_tx_ch_list * r_chlist) {
+	int i, q, d = 0;
+
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->tx_ch_cnt; q++) {
+			memcpy(&r_chlist->ch[d], rfnm_dgb[i]->tx_ch[q], sizeof(struct rfnm_api_tx_ch));
+			d++;
+		}
+	}
+
+	for(i = d; i < 8; i++) {
+		memset(&r_chlist->ch[i], 0, sizeof(struct rfnm_api_tx_ch));
+	}
+}
+EXPORT_SYMBOL(rfnm_populate_dev_tx_chlist);
+
+void rfnm_populate_dev_rx_chlist(struct rfnm_dev_rx_ch_list * r_chlist) {
+	int i, q, d = 0;
+
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->rx_ch_cnt; q++) {
+			memcpy(&r_chlist->ch[d], rfnm_dgb[i]->rx_ch[q], sizeof(struct rfnm_api_rx_ch));
+			d++;
+		}
+	}
+
+	for(i = d; i < 8; i++) {
+		memset(&r_chlist->ch[i], 0, sizeof(struct rfnm_api_rx_ch));
+	}
+}
+EXPORT_SYMBOL(rfnm_populate_dev_rx_chlist);
+
+struct rfnm_dev_get_set_result rfnm_dev_work_res;
+
+void rfnm_populate_dev_set_res(struct rfnm_dev_get_set_result * r_res) {
+	memcpy(r_res, &rfnm_dev_work_res, sizeof(struct rfnm_dev_get_set_result));
+}
+EXPORT_SYMBOL(rfnm_populate_dev_set_res);
+
+
+
+int rfnm_dgb_tx_set(struct rfnm_dgb *rfnm_dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
+	int (*ch_fun)(struct rfnm_dgb *, struct rfnm_api_tx_ch *);
+	ch_fun = rfnm_dgb_dt->tx_ch_set;
+	int r = ch_fun(rfnm_dgb_dt, tx_ch);
+
+	if(!r) {
+		int stream_rate = 1;
+		if(tx_ch->samp_freq_div_n == 2) {
+			stream_rate = 2;
+		}
+		if(tx_ch->stream == RFNM_CH_STREAM_AUTO) {
+			if(tx_ch->enable != RFNM_CH_OFF) {
+				rfnm_tx_dac_s = stream_rate;
+			} else {
+				rfnm_tx_dac_s = 0;
+			}
+		} else {
+			if(tx_ch->stream == RFNM_CH_STREAM_ON) {
+				rfnm_tx_dac_s = stream_rate;
+			} else if(tx_ch->stream == RFNM_CH_STREAM_OFF) {
+				rfnm_tx_dac_s = 0;
+			}
+		}
+	}
+
+	return r;
+}
+
+int rfnm_dgb_rx_set(struct rfnm_dgb *rfnm_dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
+	int (*ch_fun)(struct rfnm_dgb *, struct rfnm_api_rx_ch *);
+	ch_fun = rfnm_dgb_dt->rx_ch_set;
+	int r = ch_fun(rfnm_dgb_dt, rx_ch);
+
+	if(!r) {
+		int stream_rate = 1;
+		if(rx_ch->samp_freq_div_n == 2) {
+			stream_rate = 2;
+		}
+		if(rx_ch->stream == RFNM_CH_STREAM_AUTO) {
+			if(rx_ch->enable != RFNM_CH_OFF) {
+				rfnm_rx_adc_s[rx_ch->adc_id] = stream_rate;
+			} else {
+				rfnm_rx_adc_s[rx_ch->adc_id] = 0;
+			}
+		} else {
+			if(rx_ch->stream == RFNM_CH_STREAM_ON) {
+				rfnm_rx_adc_s[rx_ch->adc_id] = stream_rate;
+			} else if(rx_ch->stream == RFNM_CH_STREAM_OFF) {
+				rfnm_rx_adc_s[rx_ch->adc_id] = 0;
+			}
+		}
+	}
+
+	return r;
+}
+
+
+
+struct rfnm_dev_tx_ch_list r_tx_chlist_work;
+struct rfnm_dev_rx_ch_list r_rx_chlist_work;
+
+#include <linux/workqueue.h>
+
+void rfnm_apply_dev_tx_chlist_work(struct work_struct * tasklet_data) {
+	int i, q, d = 0;
+
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->tx_ch_cnt; q++) {
+			memcpy(rfnm_dgb[i]->tx_ch[q], &r_tx_chlist_work.ch[d], sizeof(struct rfnm_api_tx_ch));
+#if 1
+			if (((1 << q) & r_tx_chlist_work.apply)) {
+				int ecode = rfnm_dgb_tx_set(rfnm_dgb[i], rfnm_dgb[i]->tx_ch[q]);
+				printk("tx ch %d code %d\n", q, ecode);	
+				rfnm_dev_work_res.tx_ecodes[q] = -ecode;
+			}			
+#endif
+			d++;
+		}
+	}
+	rfnm_la9310_stream(rfnm_tx_dac_s, rfnm_rx_adc_s);
+	rfnm_dev_work_res.cc_rx = r_rx_chlist_work.cc;
+}
+DECLARE_WORK(rfnm_tx_chlist_work, &rfnm_apply_dev_tx_chlist_work);
+
+
+
+
+
+void rfnm_apply_dev_rx_chlist_work(struct work_struct * tasklet_data) {
+	int i, q, d = 0;
+
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->rx_ch_cnt; q++) {
+			memcpy(rfnm_dgb[i]->rx_ch[q], &r_rx_chlist_work.ch[d], sizeof(struct rfnm_api_rx_ch));
+#if 1
+			if (((1 << q) & r_rx_chlist_work.apply)) {
+				int ecode = rfnm_dgb_rx_set(rfnm_dgb[i], rfnm_dgb[i]->rx_ch[q]);				
+				printk("rx ch %d code %d\n", q, ecode);
+				rfnm_dev_work_res.rx_ecodes[q] = -ecode;
+			}			
+#endif
+			d++;
+		}
+	}
+
+	rfnm_la9310_stream(rfnm_tx_dac_s, rfnm_rx_adc_s);
+	rfnm_dev_work_res.cc_rx = r_rx_chlist_work.cc;
+}
+
+DECLARE_WORK(rfnm_rx_chlist_work , &rfnm_apply_dev_rx_chlist_work);
+
+void rfnm_apply_dev_tx_chlist(struct rfnm_dev_tx_ch_list * r_chlist) {
+	memcpy(&r_tx_chlist_work, r_chlist, sizeof(struct rfnm_dev_tx_ch_list));
+	schedule_work(&rfnm_tx_chlist_work);
+}
+EXPORT_SYMBOL(rfnm_apply_dev_tx_chlist);
+
+void rfnm_apply_dev_rx_chlist(struct rfnm_dev_rx_ch_list * r_chlist) {
+	memcpy(&r_rx_chlist_work, r_chlist, sizeof(struct rfnm_dev_rx_ch_list));
+	schedule_work(&rfnm_rx_chlist_work);
+}
+EXPORT_SYMBOL(rfnm_apply_dev_rx_chlist);
+
+
+
+
 
 
 void rfnm_dgb_en_tdd(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_rx_ch * rx_ch) {
@@ -240,6 +461,23 @@ static ssize_t b_show(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, char
 			return sysfs_emit(buf, "tdd\n");
 		}
 	}
+
+	if(strcmp(attr->attr.name, "stream") == 0) {
+		enum rfnm_ch_stream stream;
+		if(ch_obj->txrx == RFNM_RX) {
+			stream = rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->stream;
+		} else {
+			stream = rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->stream;
+		}
+
+		if(stream == RFNM_CH_STREAM_AUTO) {
+			return sysfs_emit(buf, "auto\n");
+		} else if(stream == RFNM_CH_STREAM_OFF) {
+			return sysfs_emit(buf, "off\n");
+		} else if(stream == RFNM_CH_STREAM_ON) {
+			return sysfs_emit(buf, "on\n");
+		}
+	}
 	
 	if(strcmp(attr->attr.name, "bias_tee") == 0) {
 		enum rfnm_bias_tee bias_tee;
@@ -253,6 +491,19 @@ static ssize_t b_show(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, char
 			return sysfs_emit(buf, "off\n");
 		} else if(bias_tee == RFNM_BIAS_TEE_ON) {
 			return sysfs_emit(buf, "on\n");
+		}
+	}
+
+	if(strcmp(attr->attr.name, "fm_notch") == 0) {
+		enum rfnm_fm_notch fm_notch;
+		fm_notch = rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->fm_notch;
+		
+		if(fm_notch == RFNM_FM_NOTCH_AUTO) {
+			return sysfs_emit(buf, "auto\n");
+		} else if(fm_notch == RFNM_FM_NOTCH_ON) {
+			return sysfs_emit(buf, "on\n");
+		} else if(fm_notch == RFNM_FM_NOTCH_OFF) {
+			return sysfs_emit(buf, "off\n");
 		}
 	}
 
@@ -325,16 +576,12 @@ static ssize_t b_store(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, con
 			return -EINVAL;
 		}
 		
-		if(ch_obj->txrx == RFNM_RX) {			
-			int (*ch_fun)(struct rfnm_dgb *rfnm_dgb_dt, struct rfnm_api_rx_ch * rx_ch);
-			ch_fun = rfnm_dgb[ch_obj->dgb_id]->rx_ch_set;
-			if(ch_fun(rfnm_dgb[ch_obj->dgb_id], rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id])) {
+		if(ch_obj->txrx == RFNM_RX) {
+			if(rfnm_dgb_rx_set(rfnm_dgb[ch_obj->dgb_id], rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id])) {
 				return -EAGAIN;
 			}
 		} else {
-			int (*ch_fun)(struct rfnm_dgb *rfnm_dgb_dt, struct rfnm_api_tx_ch * tx_ch);
-			ch_fun = rfnm_dgb[ch_obj->dgb_id]->tx_ch_set;
-			if(ch_fun(rfnm_dgb[ch_obj->dgb_id], rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id])) {
+			if(rfnm_dgb_tx_set(rfnm_dgb[ch_obj->dgb_id], rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id])) {
 				return -EAGAIN;
 			}
 		}
@@ -425,6 +672,27 @@ static ssize_t b_store(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, con
 		}
 	}
 
+	if(strcmp(attr->attr.name, "stream") == 0) {
+		enum rfnm_ch_stream stream;
+
+		if(strcmp(buf_red, "auto") == 0) {
+			stream = RFNM_CH_STREAM_AUTO;
+		} else if(strcmp(buf_red, "off") == 0) {
+			stream = RFNM_CH_STREAM_OFF;
+		} else if(strcmp(buf_red, "on") == 0) {
+			stream = RFNM_CH_STREAM_ON;
+		} else {
+			printk("%d stream, %s\n", stream, buf);
+			return -EINVAL;
+		}		
+
+		if(ch_obj->txrx == RFNM_RX) {
+			rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->stream = stream;
+		} else {
+			rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->stream = stream;
+		}
+	}
+
 	if(strcmp(attr->attr.name, "bias_tee") == 0) {
 		enum rfnm_bias_tee bias_tee;
 
@@ -441,6 +709,22 @@ static ssize_t b_store(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, con
 		} else {
 			rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->bias_tee = bias_tee;
 		}
+	}
+
+	if(strcmp(attr->attr.name, "fm_notch") == 0) {
+		enum rfnm_fm_notch fm_notch;
+
+		if(strcmp(buf_red, "auto") == 0) {
+			fm_notch = RFNM_FM_NOTCH_AUTO;
+		} else if(strcmp(buf_red, "off") == 0) {
+			fm_notch = RFNM_FM_NOTCH_OFF;
+		} else if(strcmp(buf_red, "on") == 0) {
+			fm_notch = RFNM_FM_NOTCH_ON;
+		} else {
+			return -EINVAL;
+		}		
+		
+		rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->fm_notch = fm_notch;
 	}
 
 	if(strcmp(attr->attr.name, "path") == 0) {
@@ -525,6 +809,7 @@ static struct r_attribute freq_max_attribute = __ATTR(freq_max, 0664, b_show, b_
 static struct r_attribute iq_lpf_bw_attribute = __ATTR(iq_lpf_bw, 0664, b_show, b_store);
 static struct r_attribute agc_attribute = __ATTR(agc, 0664, b_show, b_store);
 static struct r_attribute bias_tee_attribute = __ATTR(bias_tee, 0664, b_show, b_store);
+static struct r_attribute fm_notch_attribute = __ATTR(fm_notch, 0664, b_show, b_store);
 static struct r_attribute path_attribute = __ATTR(path, 0664, b_show, b_store);
 
 
@@ -539,6 +824,7 @@ static struct attribute *rfnm_rx_def_attrs[] = {
 	&iq_lpf_bw_attribute.attr,
 	&agc_attribute.attr,
 	&bias_tee_attribute.attr,
+	&fm_notch_attribute.attr,
 	&path_attribute.attr,
 	NULL,	/* need to NULL terminate the list of attributes */
 };
@@ -648,17 +934,23 @@ void rfnm_dgb_reg(struct rfnm_dgb *dgb_dt) {
 	uint32_t gpout4 = gpout_vmem[GP_OUT_4];
 	
 	for(i = 0; i < 2; i++) {
-		gpout4 &= ~(0x1 << RFNM_ADC_MAP[i + (dgb_dt->dgb_id << 2)]);
-		if(dgb_dt->adc_iqswap[i] || (
-			!dgb_dt->adc_iqswap[i] && dgb_dt->dgb_id == 0 && i == 1
-			)) {
-			gpout4 |= 0x1 << RFNM_ADC_MAP[i + (dgb_dt->dgb_id << 2)];
+		uint32_t map = (8 * (RFNM_ADC_MAP[i + (dgb_dt->dgb_id << 1)] - 1));
+		gpout4 &= ~(0x8 << map);
+		if(dgb_dt->dgb_id == 0 && i == 1) {
+			if(!dgb_dt->adc_iqswap[i]) {
+				gpout4 |= 0x8 << map;
+			}
+		} else {
+			if(dgb_dt->adc_iqswap[i]) {
+				gpout4 |= 0x8 << map;
+			}
 		}
 	}
 
 	if(dgb_slot == 0) {
 		uint32_t gpout7 = gpout_vmem[GP_OUT_7];
 		gpout7 &= ~(0x1 << 3);
+		// honestly, what's going on with the transmitter chain???
 		if(dgb_dt->dac_iqswap[0]) {
 			gpout7 |= 0x1 << 3;
 		}
@@ -713,7 +1005,12 @@ static __init int rfnm_daughterboard_init(void)
 	// on boot, enable iq-swap on rx-2/primary (maps to 4)
 	gpout_vmem[GP_OUT_4] |= 0x1 << 27;
 
-	
+	bootcfg = memremap(RFNM_BOOTCONFIG_PHYADDR, SZ_4M, MEMREMAP_WB);
+
+
+	memset(&rfnm_rx_adc_s[0], 0, 4);
+	rfnm_tx_dac_s = 0;
+		
 /*
 	struct device *dev;
 	int err;
@@ -737,6 +1034,8 @@ static __exit void rfnm_daughterboard_exit(void)
 {
 	//kobject_put(&foo->kobj);
 	//kset_unregister(rfnm_dgb_primary_kset);
+
+	memunmap(bootcfg);
 }
 
 
