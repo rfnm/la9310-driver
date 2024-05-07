@@ -86,10 +86,10 @@ int rfnm_fe_generic_init(struct rfnm_dgb * dgb_dt, int * num_latches) {
 
 void rfnm_fe_manual_clock(int dgb_id, int id) {
 
-	printk("clocking %d\n", id);
+	//printk("clocking %d\n", id);
 
 	// enable latch before changing output    
-	rfnm_gpio_clear(dgb_id, RFNM_DGB_LA_FE_CLK);
+	rfnm_gpio_set(dgb_id, RFNM_DGB_LA_FE_CLK);
 
 	// change output
 	switch(id) {
@@ -131,8 +131,8 @@ void rfnm_fe_manual_clock(int dgb_id, int id) {
 	}
 
 	// latch read-in
-    rfnm_gpio_set(dgb_id, RFNM_DGB_LA_FE_CLK);
-	rfnm_gpio_clear(dgb_id, RFNM_DGB_LA_FE_CLK);
+    rfnm_gpio_clear(dgb_id, RFNM_DGB_LA_FE_CLK);
+	rfnm_gpio_set(dgb_id, RFNM_DGB_LA_FE_CLK);
 }
 
 void rfnm_fe_load_data_bit(int dgb_id, int latch, int bit) {
@@ -202,7 +202,11 @@ void rfnm_fe_load_latch(struct rfnm_dgb * dgb_dt, int id) {
 		return;
 	}
 
-	printk("loading latch %d, %x\n", id, lval);
+	if(dgb_dt->fe.load_order[0] && !dgb_dt->fe.load_order[id - 1]) {
+		return;
+	}
+	
+	//printk("loading latch %d, %x\n", id, lval);
 
 	//printk("bits ");
 	int l, q, bit;
