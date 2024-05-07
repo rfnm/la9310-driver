@@ -66,9 +66,9 @@ rfnm_lime-objs += ../../../LMS7002M_kernel/src/LMS7002M_xbuf.o
 
 
 
+rfnm_breakout-objs := rfnm_breakout_m.o 
 
-
-obj-m += rfnm_granita.o rfnm_lime.o
+obj-m += rfnm_granita.o rfnm_lime.o rfnm_breakout.o
 
 obj-m += rfnm_daughterboard.o
 obj-m += rfnm_gpio.o
@@ -80,8 +80,8 @@ obj-m += rfnm_usb_boost.o
 
 #obj-m += rfnm_kasan.o
 
+obj-m += rfnm_lalib.o
 
 
-
-la9310rfnm-objs := la9310_rfnm.o  cache.o pack16to12.o
+la9310rfnm-objs := la9310_rfnm.o  cache.o pack16to12.o unpack12to16.o
 
