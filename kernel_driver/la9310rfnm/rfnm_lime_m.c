@@ -380,9 +380,8 @@ void rfnm_rx_ch_get(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 
 int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
-
-	
 	kernel_neon_begin();
+	rfnm_api_failcode ecode = RFNM_API_OK;
 	int ret;
     double actualRate = 0.0;
 	uint64_t freq = tx_ch->freq / (1000 * 1000);
@@ -398,11 +397,12 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 	ret = LMS7002M_set_lo_freq(lms, LMS_TX, LMS_REF_FREQ, tx_ch->freq, &actualRate);
 	if(ret) {
 		printk("Tuning failed\n");
+		ecode = RFNM_API_TUNE_FAIL;
 		goto fail;
 	}
 	printk("%d - Actual TX LO freq %s MHz\n", ret, dtoa1(actualRate/1e6));
 
-	if(freq < 1000) {
+	if(freq < 1500) {
 		lime0_tx_band(dgb_dt, RFNM_LIME0_TX_BAND_LOW);
 		LMS7002M_trf_select_band(lms, LMS_CHA, 2);
 	} else {
@@ -415,9 +415,14 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 
 	lime0_set_iq_tx_lpf_bandwidth(dgb_dt, tx_ch->iq_lpf_bw);
 
+	if(tx_ch->path != RFNM_PATH_LOOPBACK) {
+		lime0_ant_tx(dgb_dt);
+		lime0_disable_all_lna(dgb_dt);
+	} else {
+		lime0_loopback(dgb_dt);
+	}
+
 	
-	lime0_ant_tx(dgb_dt);
-	lime0_disable_all_lna(dgb_dt);
 
 	rfnm_fe_load_order(dgb_dt, RFNM_LO_LIME0_FA, RFNM_LO_LIME0_ANT, RFNM_LO_LIME0_TX, RFNM_LO_LIME0_END);
 
@@ -440,25 +445,31 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 
 fail: 
 	kernel_neon_end();
-	return -EAGAIN;
+	return -ecode;
 
 }
 
 int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	kernel_neon_begin();
 	int ret;
+	rfnm_api_failcode ecode = RFNM_API_OK;
     double actualRate = 0.0;
 	LMS7002M_t *lms;
     lms = dgb_dt->priv_drv;
 	uint64_t freq = rx_ch->freq / (1000 * 1000);
 
 	
-
-	lime0_fm_notch(dgb_dt, 1);
+	if(rx_ch->fm_notch == RFNM_FM_NOTCH_AUTO) {
+		lime0_fm_notch(dgb_dt, 1);
+	} else if(rx_ch->fm_notch == RFNM_FM_NOTCH_ON) {
+		lime0_fm_notch(dgb_dt, 1);
+	} else if(rx_ch->fm_notch == RFNM_FM_NOTCH_OFF) {
+		lime0_fm_notch(dgb_dt, 0);
+	}
+	
 
 	if(freq <= 2) {
 		lime0_filter_0_2(dgb_dt);
-		printk("ERROR: this filter has a hardware problem, change frequency or accept that you won't be able to receive anything\n");
 	} else if(freq <= 12) {
 		lime0_filter_2_12(dgb_dt);
 	} else if(freq <= 30) {
@@ -467,14 +478,18 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		lime0_filter_30_60(dgb_dt);
 	} else if(freq <= 120) {
 		lime0_filter_60_120(dgb_dt);
-		lime0_fm_notch(dgb_dt, 0);
+		if(rx_ch->fm_notch == RFNM_FM_NOTCH_AUTO) {
+			lime0_fm_notch(dgb_dt, 0);
+		}
 	} else if(freq <= 250) {
 		lime0_filter_120_250(dgb_dt);
+		if(freq <= 150 && rx_ch->fm_notch == RFNM_FM_NOTCH_AUTO) {
+			lime0_fm_notch(dgb_dt, 0);
+		}
 	} else if(freq <= 480) {
 		lime0_filter_250_480(dgb_dt);
 	} else if(freq <= 1000) {
 		lime0_filter_480_1000(dgb_dt);
-		printk("ERROR: this filter has a hardware problem, change frequency or accept that you won't be able to receive anything\n");
 	} else {
 		if(freq >= 1166 && freq <= 1229) {
 			lime0_filter_1166_1229(dgb_dt);
@@ -509,6 +524,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	if(ret) {
 		printk("Tuning failed\n");
+		ecode = RFNM_API_TUNE_FAIL;
 		goto fail;
 	}
 	printk("%d - Actual RX LO freq %s MHz\n", ret, dtoa1(actualRate/1e6));
@@ -531,10 +547,14 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	//LMS7002M_trf_enable(lms, LMS_CHA, false);
 
 	
-	// also configures antenna: 
 	lime0_set_rx_gain(dgb_dt, rx_ch->gain);
-	lime0_tx_power(dgb_dt, 1000, -100);
-	lime0_disable_all_pa(dgb_dt);
+
+	if(rx_ch->path != RFNM_PATH_LOOPBACK) {
+		lime0_tx_power(dgb_dt, 1000, -100);
+		lime0_disable_all_pa(dgb_dt);
+	} else {
+		lime0_disable_all_pa(dgb_dt);
+	}
 
 	rfnm_fe_load_order(dgb_dt, RFNM_LO_LIME0_TX, RFNM_LO_LIME0_ANT, RFNM_LO_LIME0_FA, RFNM_LO_LIME0_END);
 
@@ -558,7 +578,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 fail: 
 	kernel_neon_end();
-	return -EAGAIN;
+	return -ecode;
 }
 
 
@@ -596,7 +616,7 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	const struct spi_device_id *id = spi_get_device_id(spi);
 	int i, ret;
 
-	dgb_dt = devm_kzalloc(dev, sizeof(*dgb_dt), GFP_KERNEL);
+	dgb_dt = devm_kzalloc(dev, sizeof(struct rfnm_dgb), GFP_KERNEL);
 	if(!dgb_dt) {
 		kernel_neon_end();
 		return -ENOMEM;
@@ -687,7 +707,7 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	LMS7002M_trf_enable(lms, LMS_CHA, true);
 
 	// tune tx PLL to a high frequency out of the way to avoid spurs... meh. 
-	LMS7002M_set_lo_freq(lms, LMS_TX, LMS_REF_FREQ, 3800 MHZ_TO_HZ, &actualRate);
+	LMS7002M_set_lo_freq(lms, LMS_TX, LMS_REF_FREQ, MHZ_TO_HZ(3800), &actualRate);
 	// then disable some of it
 	LMS7002M_sxx_enable(lms, LMS_TX, false);
 
@@ -718,24 +738,26 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	struct rfnm_api_tx_ch *tx_ch, *tx_s;
 	struct rfnm_api_rx_ch *rx_ch, *rx_s;
 
-	tx_ch = devm_kzalloc(dev, sizeof(*tx_ch), GFP_KERNEL);
-	rx_ch = devm_kzalloc(dev, sizeof(*rx_ch), GFP_KERNEL);
-	tx_s = devm_kzalloc(dev, sizeof(*tx_s), GFP_KERNEL);
-	rx_s = devm_kzalloc(dev, sizeof(*rx_s), GFP_KERNEL);
+	tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+	rx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
+	tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);		
+	rx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
 
 	if(!tx_ch || !rx_ch || !tx_s || !rx_s) {
 		kernel_neon_end();
 		return -ENOMEM;
 	}
 
-	tx_ch->freq_max = 3500 MHZ_TO_HZ;
-	tx_ch->freq_min = 10 MHZ_TO_HZ;
-	
+	tx_ch->freq_max = MHZ_TO_HZ(3500);
+	tx_ch->freq_min = MHZ_TO_HZ(10);
+	tx_ch->path_preferred = RFNM_PATH_SMA_A;
+	tx_ch->dac_id = 0;
 	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
 
-	rx_ch->freq_max = 3500 MHZ_TO_HZ;
-	rx_ch->freq_min = 10 MHZ_TO_HZ;
-	
+	rx_ch->freq_max = MHZ_TO_HZ(3500);
+	rx_ch->freq_min = MHZ_TO_HZ(10);
+	rx_ch->path_preferred = RFNM_PATH_SMA_A;
+	rx_ch->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch, rx_s);
 
 	dgb_dt->dac_ifs = 0x7;
