@@ -535,9 +535,43 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 
 
+	if(rx_ch->rfic_dc_off_q || rx_ch->rfic_dc_off_i) {
+		LMS7002M_set_mac_ch(lms, LMS_CHAB);
 
+		int16_t q = rx_ch->rfic_dc_off_q;
+		int16_t i = rx_ch->rfic_dc_off_i;
+                        
+		if(i == 0 && q == 0) {
+			lms->regs->reg_0x010d_en_dcoff_rxfe_rfe = 0;
+			printk("disabling lms dc offset\n");
+		} else {
+			lms->regs->reg_0x010d_en_dcoff_rxfe_rfe = 1;
+			printk("enabling lms dc offset\n");
+		}
 
+		LMS7002M_regs_spi_write(lms, 0x010d);
 
+		if(q > 63 || q < -63 || i > 63 || i < -63) {
+			printk("lms_set_dcoff out of range q [-63 63] i [-63 63]");
+		}
+
+		if(q < 0) {
+			q = -q;
+			q |= (1 << 6);
+		}
+
+		if(i < 0) {
+			i = -i;
+			i |= (1 << 6);
+		}
+
+		//printf("%02x %02x \n", q, i);
+
+		lms->regs->reg_0x010e_dcoffq_rfe = q & 0x7f;
+		lms->regs->reg_0x010e_dcoffi_rfe = i & 0x7f;
+
+		LMS7002M_regs_spi_write(lms, 0x010e);
+	}
 
 	
 
