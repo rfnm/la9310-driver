@@ -291,8 +291,14 @@ void rfnm_apply_dev_tx_chlist(struct rfnm_dev_tx_ch_list * r_chlist) {
 EXPORT_SYMBOL(rfnm_apply_dev_tx_chlist);
 
 void rfnm_apply_dev_rx_chlist(struct rfnm_dev_rx_ch_list * r_chlist) {
-	memcpy(&r_rx_chlist_work, r_chlist, sizeof(struct rfnm_dev_rx_ch_list));
-	schedule_work(&rfnm_rx_chlist_work);
+
+	if(work_pending(&rfnm_rx_chlist_work)) {
+		printk("Not scheduling work! bug... \n");
+	} else {
+		memcpy(&r_rx_chlist_work, r_chlist, sizeof(struct rfnm_dev_rx_ch_list));
+		schedule_work(&rfnm_rx_chlist_work);
+	}
+	
 }
 EXPORT_SYMBOL(rfnm_apply_dev_rx_chlist);
 

@@ -140,8 +140,10 @@ int parse_lime_iq_lpf(int mhz) {
 		return 5;
 	} else if(mhz >= 3) {
 		return 3;
-	} else {
+	} else if(mhz >= 1) {
 		return 1;
+	} else {
+		return 100;
 	}
 }
 

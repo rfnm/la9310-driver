@@ -404,7 +404,7 @@ int lime0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_T6O, 0);
 	}
 	
-	printk("target pwr %d vs cur %d", target, cur_power);
+	//printk("target pwr %d vs cur %d", target, cur_power);
 	if(target > cur_power) {
 		return abs(target - cur_power);
 	} else {

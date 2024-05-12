@@ -100,7 +100,7 @@ int parse_granita_iq_lpf(int mhz) {
 	} else if(mhz >= 20) {
 		return 20000;
 	} else {
-		if(mhz < 20) {
+		if(mhz >= 1) {
 			return 20000;
 		} else {
 			return 100000;
