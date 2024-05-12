@@ -85,6 +85,7 @@ void granita0_fa_filter_950_3000(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 0); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2L, 1);
 }
 
@@ -96,6 +97,7 @@ void granita0_fa_filter_1805_2200(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 1); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 0); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 1); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2L, 1);
 }
 
@@ -107,6 +109,7 @@ void granita0_fa_filter_2300_2690(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 1); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 1); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2L, 1);
 }
 
@@ -120,6 +123,7 @@ void granita0_fa_filter_1574_1605(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2PL1, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2L, 1);
 }
@@ -134,6 +138,7 @@ void granita0_fa_filter_1166_1229(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2PL2, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_G2L, 1);
 }
@@ -282,6 +287,7 @@ void granita0_fb_filter_950_3000(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 0); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2L, 1);
 }
 
@@ -293,6 +299,7 @@ void granita0_fb_filter_1805_2200(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 1); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 0); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 1); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2L, 1);
 }
 
@@ -304,6 +311,7 @@ void granita0_fb_filter_2300_2690(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 1); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 1); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2L, 1);
 }
 
@@ -317,6 +325,7 @@ void granita0_fb_filter_1574_1605(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2PL1, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2L, 1);
 }
@@ -331,6 +340,7 @@ void granita0_fb_filter_1166_1229(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0); // G2I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1); // G2O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // G2O2
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2PL2, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_G2L, 1);
 }
@@ -728,7 +738,7 @@ int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target, int is_loo
 		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_T6O, 0);
 	}
 	
-	printk("%d vs %d", target,  cur_power);
+	//printk("%d vs %d", target,  cur_power);
 	if(target > cur_power) {
 		return abs(target - cur_power);
 	} else {
