@@ -100,7 +100,7 @@ int parse_granita_iq_lpf(int mhz) {
 	} else if(mhz >= 20) {
 		return 20000;
 	} else {
-		if(mhz == 0) {
+		if(mhz < 20) {
 			return 20000;
 		} else {
 			return 100000;
@@ -261,6 +261,65 @@ fail:
 	return -ecode;
 }
 
+/*[ 2157.510915] Unable to handle kernel paging request at virtual address 0000000200000000
+[ 2157.510934] Mem abort info:
+[ 2157.510935]   ESR = 0x96000044
+[ 2157.510938]   EC = 0x25: DABT (current EL), IL = 32 bits
+[ 2157.510943]   SET = 0, FnV = 0
+[ 2157.510945]   EA = 0, S1PTW = 0
+[ 2157.510947]   FSC = 0x04: level 0 translation fault
+[ 2157.510950] Data abort info:
+[ 2157.510952]   ISV = 0, ISS = 0x00000044
+[ 2157.510954]   CM = 0, WnR = 1
+[ 2157.510957] user pgtable: 4k pages, 48-bit VAs, pgdp=0000000105861000
+[ 2157.510961] [0000000200000000] pgd=0000000000000000, p4d=0000000000000000
+[ 2157.510969] Internal error: Oops: 96000044 [#1] PREEMPT_RT SMP
+[ 2157.510974] Modules linked in: rfnm_granita(O) rfnm_breakout(O) rfnm_lime(O) rfnm_usb_boost(O) rfnm_usb(O) rfnm_usb_function(O) rfnm_daughterboard(O) rfnm_lalib(O) la9310rfnm(O) rfnm_gpio(O) kpage_ncache(O) la9310shiva(O) overlay fsl_jr_uio caam_jr caamkeyblob_desc caamhash_desc caamalg_desc crypto_engine authenc libdes cdc_acm crct10dif_ce dw_hdmi_cec snd_soc_imx_hdmi snd_soc_fsl_xcvr caam secvio error fuse [last unloaded: rfnm_gpio]
+[ 2157.511031] CPU: 0 PID: 1260 Comm: kworker/0:0 Tainted: G        W  O      5.15.71-rt51 #13
+[ 2157.511037] Hardware name: RFNM imx8mp (DT)
+[ 2157.511041] Workqueue: events rfnm_apply_dev_rx_chlist_work [rfnm_daughterboard]
+[ 2157.511060] pstate: 60000005 (nZCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+[ 2157.511065] pc : ktime_get_real_ts64+0x40/0x100
+[ 2157.511077] lr : spi_transfer_one_message+0xe0/0x470
+[ 2157.511083] sp : ffff80001bc2b3b0
+[ 2157.511085] x29: ffff80001bc2b3b0 x28: ffff80001bc2b5f8 x27: ffff800009843078
+[ 2157.511092] x26: 0000000000000000 x25: ffff0000c0fd9390 x24: 0000000000000000
+[ 2157.511099] x23: ffff0000c0fecbc8 x22: 0000000200000000 x21: 0000000000106d0e
+[ 2157.511106] x20: ffff800009e66f80 x19: 0000000000000000 x18: 00000000000a6c68
+[ 2157.511113] x17: 0000000000000000 x16: 0000000000000000 x15: 0000000200000000
+[ 2157.511119] x14: 00000000000001ad x13: 0000000000000000 x12: 0000000000000000
+[ 2157.511126] x11: 0000000000000000 x10: 0000000000000101 x9 : 0000000000000014
+[ 2157.511132] x8 : ffff0000c0fec800 x7 : ffff80001bc2b560 x6 : 00000000000f4240
+[ 2157.511139] x5 : ffff0000c0fd9700 x4 : ffff0000c0fecbe0 x3 : 0000000000000000
+[ 2157.511145] x2 : 0000000000000000 x1 : ffff800009ddb000 x0 : 00000000663fcdc2
+[ 2157.511152] Call trace:
+[ 2157.511155]  ktime_get_real_ts64+0x40/0x100
+[ 2157.511161]  spi_transfer_one_message+0xe0/0x470
+[ 2157.511166]  __spi_pump_messages+0x318/0x59c
+[ 2157.511171]  __spi_sync+0x210/0x240
+[ 2157.511175]  spi_sync+0x30/0x5c
+[ 2157.511179]  spi_sync_transfer.constprop.0+0x68/0x90 [rfnm_granita]
+[ 2157.511195]  com_receive+0x8c/0xf0 [rfnm_granita]
+[ 2157.511206]  Si_Read_FullPath+0x44/0x64 [rfnm_granita]
+[ 2157.511218]  Si_Read_FullAddr+0x68/0x8c [rfnm_granita]
+[ 2157.511230]  SiMid_BitWrite+0x6c/0x15c [rfnm_granita]
+[ 2157.511242]  SiAPISetSynth+0x6c4/0x900 [rfnm_granita]
+[ 2157.511254]  SiAPIPowerUpRX+0x28c/0x6f0 [rfnm_granita]
+[ 2157.511266]  rfnm_rx_ch_set+0x21c/0x3c0 [rfnm_granita]
+[ 2157.511278]  rfnm_dgb_rx_set+0x1c/0xc4 [rfnm_daughterboard]
+[ 2157.511288]  rfnm_apply_dev_rx_chlist_work+0x100/0x12c [rfnm_daughterboard]
+[ 2157.511297]  process_one_work+0x1d0/0x354
+[ 2157.511302]  worker_thread+0x130/0x460
+[ 2157.511306]  kthread+0x188/0x1a0
+[ 2157.511312]  ret_from_fork+0x10/0x20
+[ 2157.511321] Code: 120002b3 370004b5 d50339bf f9404280 (f90002c0)
+[ 2157.511328] ---[ end trace 0000000000000003 ]---
+
+
+http://mail.spinics.net/lists/linux-spi/msg34523.html
+
+*/
+
 int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	
 	int freq = rx_ch->freq / (1000 * 1000);
@@ -317,6 +376,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 				granita0_ant_b_attn_12(dgb_dt);
 			} else {
 				granita0_ant_b_through(dgb_dt);
+				//printk("granita0_ant_b_through\n");
 			}
 		}
 
@@ -364,7 +424,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			//printf("SiAPIPowerUpRX wouldn't return nice things\n");
 		}
 
-		printk("dbm is %d\n", dbm);
+		//printk("rx dbm is %d\n", dbm);
 
 		if(dbm > 0) {
 			if(dbm > 64) {

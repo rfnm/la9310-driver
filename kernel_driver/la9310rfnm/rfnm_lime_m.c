@@ -113,6 +113,38 @@ static inline uint32_t lms_interface_transact(void *handle, const uint32_t data,
         (((uint32_t)rxbuf[0]) << 0);
 }
 
+int parse_lime_iq_lpf(int mhz) {
+	if(mhz >= 100) {
+		return 100;
+	} else if(mhz >= 90) {
+		return 90;
+	} else if(mhz >= 80) {
+		return 80;
+	} else if(mhz >= 70) {
+		return 70;
+	} else if(mhz >= 60) {
+		return 60;
+	} else if(mhz >= 50) {
+		return 50;
+	} else if(mhz >= 40) {
+		return 40;
+	} else if(mhz >= 30) {
+		return 30;
+	} else if(mhz >= 20) {
+		return 20;
+	} else if(mhz >= 15) {
+		return 15;
+	} else if(mhz >= 10) {
+		return 10;
+	} else if(mhz >= 5) {
+		return 5;
+	} else if(mhz >= 3) {
+		return 3;
+	} else {
+		return 1;
+	}
+}
+
 void lime0_set_iq_rx_lpf_bandwidth(struct rfnm_dgb *dgb_dt, int rxbw) {
 
 	/*struct rfnm_dgb *dgb_dt;
@@ -413,7 +445,7 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 	lime0_tx_power(dgb_dt, freq, tx_ch->power);
 	lime0_tx_lpf(dgb_dt, freq);
 
-	lime0_set_iq_tx_lpf_bandwidth(dgb_dt, tx_ch->iq_lpf_bw);
+	lime0_set_iq_tx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(tx_ch->iq_lpf_bw));
 
 	if(tx_ch->path != RFNM_PATH_LOOPBACK) {
 		lime0_ant_tx(dgb_dt);
@@ -531,7 +563,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	
 
-	lime0_set_iq_rx_lpf_bandwidth(dgb_dt, rx_ch->iq_lpf_bw);
+	lime0_set_iq_rx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(rx_ch->iq_lpf_bw));
 
 
 
