@@ -256,7 +256,7 @@ int rfnm_la9310_stream(uint8_t tx, uint8_t *rx) {
 	
 	uint32_t t = ((tx & 0x3) << 0) | ((rx[0] & 0x3) << 2) | ((rx[1] & 0x3) << 4) | ((rx[2] & 0x3) << 6) | ((rx[3] & 0x3) << 8);
 
-	printk("stream -> %x\n", t);
+	//printk("stream -> %x\n", t);
 	
 	// simple code, but important concept: 
 	// never trigger this stream command if RFNM_CH_STREAM_OFF is set
