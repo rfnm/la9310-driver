@@ -26,6 +26,8 @@
 #include <linux/kernel.h>
 #include <linux/usb/ch9.h>
 #include <linux/module.h>
+#include <linux/io.h>
+#include <linux/rfnm-shared.h>
 
 #include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/function/f_mass_storage.h"
 
@@ -53,10 +55,12 @@ static struct usb_device_descriptor rfnm_device_desc = {
 
 static const struct usb_descriptor_header *otg_desc[2];
 
+char rfnm_serial[9] = "00000000\0";
+
 static struct usb_string strings_dev[] = {
 	[USB_GADGET_MANUFACTURER_IDX].s = "RFNM Inc",
 	[USB_GADGET_PRODUCT_IDX].s = "RFNM Data Boost",
-	[USB_GADGET_SERIAL_IDX].s = "001",
+	[USB_GADGET_SERIAL_IDX].s = rfnm_serial,
 	{  } /* end of list */
 };
 
@@ -186,13 +190,14 @@ static int rfnm_bind(struct usb_composite_dev *cdev)
 	if (IS_ERR(fi_rfnm))
 		return PTR_ERR(fi_rfnm);
 
-	status = usb_string_ids_tab(cdev, strings_dev);
-	if (status < 0)
-		goto fail;
+	struct rfnm_bootconfig *cfg;
+	cfg = memremap(RFNM_BOOTCONFIG_PHYADDR, SZ_4M, MEMREMAP_WB);
+	memcpy(rfnm_serial, cfg->motherboard_eeprom.serial_number, 8);
+	memunmap(cfg);
 
 	rfnm_device_desc.iProduct = strings_dev[USB_GADGET_PRODUCT_IDX].id;
 	rfnm_device_desc.iManufacturer = strings_dev[USB_GADGET_MANUFACTURER_IDX].id;
-	rfnm_device_desc.iSerialNumber = strings_dev[USB_GADGET_SERIAL_IDX].id;;
+	rfnm_device_desc.iSerialNumber = strings_dev[USB_GADGET_SERIAL_IDX].id;
 	
 	status = usb_add_config(cdev, &rfnm_config_driver, rfnm_do_config);
 	if (status < 0)
