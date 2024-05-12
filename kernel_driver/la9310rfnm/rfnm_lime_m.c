@@ -49,7 +49,7 @@ void kernel_neon_end(void);
 #include "LMS7002M_impl.h"
 //#include "/home/davide/LMS7002M-driver/src/LMS7002M_impl.h"
 
-#include "/home/davide/cli/lms_regs_init.h"
+#include "rfnm_lime0_regs.h"
 
 #define LMS_REF_FREQ (51.2e6)
 
@@ -569,18 +569,19 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 
 
-	if(rx_ch->rfic_dc_off_q || rx_ch->rfic_dc_off_i) {
-		LMS7002M_set_mac_ch(lms, LMS_CHAB);
+	if(rx_ch->rfic_dc_q || rx_ch->rfic_dc_i) {
 
-		int16_t q = rx_ch->rfic_dc_off_q;
-		int16_t i = rx_ch->rfic_dc_off_i;
+		LMS7002M_set_mac_ch(lms, LMS_CHA);
+
+		int16_t q = rx_ch->rfic_dc_q;
+		int16_t i = rx_ch->rfic_dc_i;
                         
 		if(i == 0 && q == 0) {
 			lms->regs->reg_0x010d_en_dcoff_rxfe_rfe = 0;
-			printk("disabling lms dc offset\n");
+			//printk("disabling lms dc offset\n");
 		} else {
 			lms->regs->reg_0x010d_en_dcoff_rxfe_rfe = 1;
-			printk("enabling lms dc offset\n");
+			//printk("enabling lms dc offset\n");
 		}
 
 		LMS7002M_regs_spi_write(lms, 0x010d);
@@ -599,12 +600,21 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			i |= (1 << 6);
 		}
 
-		//printf("%02x %02x \n", q, i);
+		//printk("%02x %02x \n", q, i);
 
 		lms->regs->reg_0x010e_dcoffq_rfe = q & 0x7f;
 		lms->regs->reg_0x010e_dcoffi_rfe = i & 0x7f;
 
 		LMS7002M_regs_spi_write(lms, 0x010e);
+#if 0
+		LMS7002M_regs_spi_read(lms, 0x010e);
+    	printk("q 0x%x\n", LMS7002M_regs(lms)->reg_0x010e_dcoffq_rfe);
+    	printk("i 0x%x\n", LMS7002M_regs(lms)->reg_0x010e_dcoffi_rfe);
+
+		LMS7002M_regs_spi_read(lms, 0x010d);
+    	printk("en 0x%x\n", lms->regs->reg_0x010d_en_dcoff_rxfe_rfe);
+#endif
+
 	}
 
 	
