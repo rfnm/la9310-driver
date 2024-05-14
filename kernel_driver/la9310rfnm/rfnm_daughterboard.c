@@ -425,11 +425,11 @@ static ssize_t b_show(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, char
 		}
 	}
 
-	if(strcmp(attr->attr.name, "iq_lpf_bw") == 0) {
+	if(strcmp(attr->attr.name, "rfic_lpf_bw") == 0) {
 		if(ch_obj->txrx == RFNM_RX) {
-			return sysfs_emit(buf, "%d\n", rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->iq_lpf_bw);
+			return sysfs_emit(buf, "%d\n", rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->rfic_lpf_bw);
 		} else {
-			return sysfs_emit(buf, "%d\n", rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->iq_lpf_bw);
+			return sysfs_emit(buf, "%d\n", rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->rfic_lpf_bw);
 		}
 	}
 
@@ -637,15 +637,15 @@ static ssize_t b_store(struct rfnm_ch_obj *ch_obj, struct r_attribute *attr, con
 		}
 	}
 
-	if(strcmp(attr->attr.name, "iq_lpf_bw") == 0) {
+	if(strcmp(attr->attr.name, "rfic_lpf_bw") == 0) {
 		if(intconv < 0) {
 			return -EINVAL;
 		}
 		
 		if(ch_obj->txrx == RFNM_RX) {
-			rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->iq_lpf_bw = var;
+			rfnm_dgb[ch_obj->dgb_id]->rx_ch[ch_obj->dgb_ch_id]->rfic_lpf_bw = var;
 		} else {
-			rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->iq_lpf_bw = var;
+			rfnm_dgb[ch_obj->dgb_id]->tx_ch[ch_obj->dgb_ch_id]->rfic_lpf_bw = var;
 		}
 	}
 
@@ -832,7 +832,7 @@ static struct r_attribute adc_id_attribute = __ATTR(adc_id, 0664, b_show, b_stor
 static struct r_attribute dac_id_attribute = __ATTR(dac_id, 0664, b_show, b_store);
 static struct r_attribute freq_min_attribute = __ATTR(freq_min, 0664, b_show, b_store);
 static struct r_attribute freq_max_attribute = __ATTR(freq_max, 0664, b_show, b_store);
-static struct r_attribute iq_lpf_bw_attribute = __ATTR(iq_lpf_bw, 0664, b_show, b_store);
+static struct r_attribute rfic_lpf_bw_attribute = __ATTR(rfic_lpf_bw, 0664, b_show, b_store);
 static struct r_attribute agc_attribute = __ATTR(agc, 0664, b_show, b_store);
 static struct r_attribute bias_tee_attribute = __ATTR(bias_tee, 0664, b_show, b_store);
 static struct r_attribute fm_notch_attribute = __ATTR(fm_notch, 0664, b_show, b_store);
@@ -849,7 +849,7 @@ static struct attribute *rfnm_rx_def_attrs[] = {
 	&freq_min_attribute.attr,
 	&freq_max_attribute.attr,
 	&adc_id_attribute.attr,
-	&iq_lpf_bw_attribute.attr,
+	&rfic_lpf_bw_attribute.attr,
 	&agc_attribute.attr,
 	&bias_tee_attribute.attr,
 	&fm_notch_attribute.attr,
@@ -868,7 +868,7 @@ static struct attribute *rfnm_tx_def_attrs[] = {
 	&freq_min_attribute.attr,
 	&freq_max_attribute.attr,
 	&dac_id_attribute.attr,
-	&iq_lpf_bw_attribute.attr,
+	&rfic_lpf_bw_attribute.attr,
 	&bias_tee_attribute.attr,
 	&path_attribute.attr,
 	NULL,	/* need to NULL terminate the list of attributes */

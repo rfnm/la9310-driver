@@ -447,7 +447,7 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 	lime0_tx_power(dgb_dt, freq, tx_ch->power);
 	lime0_tx_lpf(dgb_dt, freq);
 
-	lime0_set_iq_tx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(tx_ch->iq_lpf_bw));
+	lime0_set_iq_tx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(tx_ch->rfic_lpf_bw));
 
 	if(tx_ch->path != RFNM_PATH_LOOPBACK) {
 		lime0_ant_tx(dgb_dt);
@@ -565,7 +565,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	
 
-	lime0_set_iq_rx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(rx_ch->iq_lpf_bw));
+	lime0_set_iq_rx_lpf_bandwidth(dgb_dt, parse_lime_iq_lpf(rx_ch->rfic_lpf_bw));
 
 
 
@@ -606,15 +606,6 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		lms->regs->reg_0x010e_dcoffi_rfe = i & 0x7f;
 
 		LMS7002M_regs_spi_write(lms, 0x010e);
-#if 0
-		LMS7002M_regs_spi_read(lms, 0x010e);
-    	printk("q 0x%x\n", LMS7002M_regs(lms)->reg_0x010e_dcoffq_rfe);
-    	printk("i 0x%x\n", LMS7002M_regs(lms)->reg_0x010e_dcoffi_rfe);
-
-		LMS7002M_regs_spi_read(lms, 0x010d);
-    	printk("en 0x%x\n", lms->regs->reg_0x010d_en_dcoff_rxfe_rfe);
-#endif
-
 	}
 
 	
@@ -829,12 +820,17 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	tx_ch->freq_max = MHZ_TO_HZ(3500);
 	tx_ch->freq_min = MHZ_TO_HZ(10);
 	tx_ch->path_preferred = RFNM_PATH_SMA_A;
+	tx_ch->path_possible[0] = RFNM_PATH_SMA_A;
+	tx_ch->path_possible[1] = RFNM_PATH_NULL;
 	tx_ch->dac_id = 0;
 	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
 
 	rx_ch->freq_max = MHZ_TO_HZ(3500);
 	rx_ch->freq_min = MHZ_TO_HZ(10);
 	rx_ch->path_preferred = RFNM_PATH_SMA_A;
+	rx_ch->path_possible[0] = RFNM_PATH_SMA_A;
+	rx_ch->path_possible[1] = RFNM_PATH_EMBED_ANT;
+	rx_ch->path_possible[2] = RFNM_PATH_NULL;
 	rx_ch->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch, rx_s);
 

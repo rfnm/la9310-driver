@@ -190,7 +190,7 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 
 
 	if(tx_ch->path != RFNM_PATH_LOOPBACK && tx_ch->enable != RFNM_CH_ON_TDD) {
-		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->iq_lpf_bw));
+		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->rfic_lpf_bw));
 		if(ret) {
 			printk("SiAPIPowerUpTX wouldn't return nice things\n");
 			ecode = RFNM_API_TUNE_FAIL;
@@ -345,7 +345,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 		if(rx_ch->path == RFNM_PATH_SMA_B) {
 			granita0_tx_power(dgb_dt, -100, 0, 0);
-			granita0_ant_a_crossover(dgb_dt);
+			granita0_ant_b_crossover(dgb_dt);
 		}
 
 		if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
@@ -382,7 +382,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 		if(rx_ch->path == RFNM_PATH_SMA_A) {
 			granita0_tx_power(dgb_dt, freq, -100, 0);
-			granita0_ant_b_crossover(dgb_dt);
+			granita0_ant_a_crossover(dgb_dt);
 		}
 
 
@@ -417,7 +417,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	if(rx_ch->path != RFNM_PATH_LOOPBACK && rx_ch->enable != RFNM_CH_ON_TDD) {
 		// TX command takes care of RX init when in loopback mode
-		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(rx_ch->freq), parse_granita_iq_lpf(rx_ch->iq_lpf_bw));
+		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(rx_ch->freq), parse_granita_iq_lpf(rx_ch->rfic_lpf_bw));
 		if(ret) {
 			ecode = RFNM_API_TUNE_FAIL;
 			goto fail;
@@ -558,18 +558,31 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	tx_ch->freq_max = MHZ_TO_HZ(6300);
 	tx_ch->freq_min = MHZ_TO_HZ(600);
 	tx_ch->path_preferred = RFNM_PATH_SMA_B;
+	tx_ch->path_possible[0] = RFNM_PATH_SMA_B;
+	tx_ch->path_possible[1] = RFNM_PATH_SMA_A;
+	tx_ch->path_possible[2] = RFNM_PATH_NULL;
+
 	tx_ch->dac_id = 0;
 	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
 
 	rx_ch[0]->freq_max = MHZ_TO_HZ(6300);
 	rx_ch[0]->freq_min = MHZ_TO_HZ(600);
 	rx_ch[0]->path_preferred = RFNM_PATH_SMA_A;
+	rx_ch[0]->path_possible[0] = RFNM_PATH_SMA_A;
+	rx_ch[0]->path_possible[1] = RFNM_PATH_SMA_B;
+	rx_ch[0]->path_possible[2] = RFNM_PATH_EMBED_ANT;
+	rx_ch[0]->path_possible[3] = RFNM_PATH_NULL;
+
 	rx_ch[0]->adc_id = 1;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[0], rx_s[0]);
 	
 	rx_ch[1]->freq_max = MHZ_TO_HZ(6300);
 	rx_ch[1]->freq_min = MHZ_TO_HZ(600);
 	rx_ch[1]->path_preferred = RFNM_PATH_SMA_B;
+	rx_ch[1]->path_possible[0] = RFNM_PATH_SMA_B;
+	rx_ch[1]->path_possible[1] = RFNM_PATH_SMA_A;
+	rx_ch[1]->path_possible[2] = RFNM_PATH_EMBED_ANT;
+	rx_ch[1]->path_possible[3] = RFNM_PATH_NULL;
 	rx_ch[1]->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[1], rx_s[1]);
 
