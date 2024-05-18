@@ -55,6 +55,8 @@
 //#include "fe_generic.h"
 //#include "fe_granita.h"
 
+#include "rfnm_granita.h"
+
 char SiCoreChar[3] = {'a', 'b', 0};
 
 /*
@@ -321,8 +323,7 @@ http://mail.spinics.net/lists/linux-spi/msg34523.html
 */
 
 int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
-	
-	int freq = rx_ch->freq / (1000 * 1000);
+
 	int dbm = rx_ch->gain;
 	int ret;
 	int gr_api_id;
@@ -349,8 +350,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		}
 
 		if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
-			granita0_tx_power(dgb_dt, freq, -100, 0);
-			if(freq < 3000) {
+			granita0_tx_power(dgb_dt, HZ_TO_MHZ(rx_ch->freq), -100, 0);
+			if(HZ_TO_MHZ(rx_ch->freq) < 3000) {
 				granita0_ant_a_embeded_lf(dgb_dt);
 			} else {
 				granita0_ant_a_embeded_hf(dgb_dt);
@@ -361,7 +362,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			granita0_ant_a_loopback(dgb_dt);
 		}
 
-		granita0_fa(dgb_dt, freq);
+		granita0_fa(dgb_dt, HZ_TO_MHZ(rx_ch->freq), rx_ch->fm_notch);
 	}
 	
 	if(rx_ch->dgb_ch_id == 1) {
@@ -381,14 +382,14 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		}
 
 		if(rx_ch->path == RFNM_PATH_SMA_A) {
-			granita0_tx_power(dgb_dt, freq, -100, 0);
+			granita0_tx_power(dgb_dt, HZ_TO_MHZ(rx_ch->freq), -100, 0);
 			granita0_ant_a_crossover(dgb_dt);
 		}
 
 
 		if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
-			granita0_tx_power(dgb_dt, freq, -100, 0);
-			if(freq < 3000) {
+			granita0_tx_power(dgb_dt, HZ_TO_MHZ(rx_ch->freq), -100, 0);
+			if(HZ_TO_MHZ(rx_ch->freq) < 3000) {
 				granita0_ant_b_embeded_lf(dgb_dt);
 			} else {
 				granita0_ant_b_embeded_hf(dgb_dt);
@@ -399,14 +400,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 			granita0_ant_b_loopback(dgb_dt);
 		}
 		
-		granita0_fb(dgb_dt, freq);
+		granita0_fb(dgb_dt, HZ_TO_MHZ(rx_ch->freq), rx_ch->fm_notch);
 	}
-
-	
-
-	rfnm_fe_load_latches(dgb_dt);
-	rfnm_fe_trigger_latches(dgb_dt);
-
 
 	if(rx_ch->dgb_ch_id == 0) {
 		gr_api_id = 2;
@@ -414,10 +409,53 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		gr_api_id = 1;
 	}
 
+	uint64_t freq = rx_ch->freq;
+
+	if(rx_ch->freq < MHZ_TO_HZ(600)) {
+		rfnm_rffc_init(dgb_dt);
+
+		int tsf;
+
+		if(rx_ch->dgb_ch_id == 0) {
+			granita0_rffc_rx_a(dgb_dt);
+			if(rx_ch->rfic_lpf_bw && rx_ch->rfic_lpf_bw <= 2) {
+				tsf = 1615;
+				granita0_rffc_rx_a_1574_1576(dgb_dt);
+			} else if(rx_ch->rfic_lpf_bw && rx_ch->rfic_lpf_bw <= 30) {
+				tsf = 1615;
+				granita0_rffc_rx_a_1574_1605(dgb_dt);
+			} else {
+				tsf = 1198;
+				granita0_rffc_rx_a_1166_1229(dgb_dt);
+			}
+		} else {
+			granita0_rffc_rx_b(dgb_dt);
+			if(rx_ch->rfic_lpf_bw && rx_ch->rfic_lpf_bw <= 2) {
+				tsf = 1615;
+				granita0_rffc_rx_b_1574_1576(dgb_dt);
+			} else if(rx_ch->rfic_lpf_bw && rx_ch->rfic_lpf_bw <= 30) {
+				tsf = 1615;
+				granita0_rffc_rx_b_1574_1605(dgb_dt);
+			} else {
+				tsf = 1198;
+				granita0_rffc_rx_b_1166_1229(dgb_dt);
+			}
+		}
+
+		rfnm_rffc_set_freq(dgb_dt, MHZ_TO_HZ(tsf) - rx_ch->freq);
+		freq = MHZ_TO_HZ(tsf);
+
+	} else {
+		rfnm_rffc_deinit(dgb_dt);
+	}
+
+
+	rfnm_fe_load_latches(dgb_dt);
+	rfnm_fe_trigger_latches(dgb_dt);
 
 	if(rx_ch->path != RFNM_PATH_LOOPBACK && rx_ch->enable != RFNM_CH_ON_TDD) {
 		// TX command takes care of RX init when in loopback mode
-		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(rx_ch->freq), parse_granita_iq_lpf(rx_ch->rfic_lpf_bw));
+		ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], gr_api_id, HZ_TO_KHZ(freq), parse_granita_iq_lpf(rx_ch->rfic_lpf_bw));
 		if(ret) {
 			ecode = RFNM_API_TUNE_FAIL;
 			goto fail;

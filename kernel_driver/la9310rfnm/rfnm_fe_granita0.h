@@ -56,7 +56,19 @@ void granita0_fb_filter_3000_5000(struct rfnm_dgb * dgb_dt);
 
 
 
-void granita0_rffc_rx_1166_1229(struct rfnm_dgb * dgb_dt);
+
+void granita0_rffc_rx_a(struct rfnm_dgb * dgb_dt);
+void granita0_rffc_rx_b(struct rfnm_dgb * dgb_dt);
+
+
+void granita0_rffc_rx_a_1166_1229(struct rfnm_dgb * dgb_dt);
+void granita0_rffc_rx_a_1574_1605(struct rfnm_dgb * dgb_dt);
+void granita0_rffc_rx_a_1574_1576(struct rfnm_dgb * dgb_dt);
+
+
+void granita0_rffc_rx_b_1166_1229(struct rfnm_dgb * dgb_dt);
+void granita0_rffc_rx_b_1574_1605(struct rfnm_dgb * dgb_dt);
+void granita0_rffc_rx_b_1574_1576(struct rfnm_dgb * dgb_dt);
 
 
 void granita0_ant_a_loopback(struct rfnm_dgb * dgb_dt);
@@ -86,8 +98,8 @@ int granita0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target, int is_loo
 
 void granita0_tx_freqsel(struct rfnm_dgb * dgb_dt, int freq);
 
-void granita0_fa(struct rfnm_dgb * dgb_dt, int freq);
-void granita0_fb(struct rfnm_dgb * dgb_dt, int freq);
+void granita0_fa(struct rfnm_dgb * dgb_dt, int freq, enum rfnm_fm_notch);
+void granita0_fb(struct rfnm_dgb * dgb_dt, int freq, enum rfnm_fm_notch);
 
 
 
@@ -201,21 +213,21 @@ void granita0_fb(struct rfnm_dgb * dgb_dt, int freq);
 #define RFNM_GRANITA0_TX_PA_S2_EN (RFNM_LATCH4 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q7)
 
 
-#define RFNM_GRANITA0_TX_FC_RTI (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q1)
-#define RFNM_GRANITA0_TX_FC_RFBI2 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q2)
-#define RFNM_GRANITA0_TX_FC_RFBI1 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q3)
-#define RFNM_GRANITA0_TX_FC_RFBO2 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q4)
-#define RFNM_GRANITA0_TX_FC_RFBO1 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q5)
-#define RFNM_GRANITA0_TX_FC_RTB (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q6)
-#define RFNM_GRANITA0_TX_FC_RAI (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q7)
+#define RFNM_GRANITA0_FC_RTI (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q1)
+#define RFNM_GRANITA0_FC_RFBI2 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q2)
+#define RFNM_GRANITA0_FC_RFBI1 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q3)
+#define RFNM_GRANITA0_FC_RFBO2 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q4)
+#define RFNM_GRANITA0_FC_RFBO1 (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q5)
+#define RFNM_GRANITA0_FC_RTB (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q6)
+#define RFNM_GRANITA0_FC_RAI (RFNM_LATCH5 | RFNM_LATCH_SEQ1 | RFNM_LATCH_Q7)
 
-#define RFNM_GRANITA0_TX_FC_RFAO1 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q1)
-#define RFNM_GRANITA0_TX_FC_RFAI2 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q2)
-#define RFNM_GRANITA0_TX_FC_RFAI1 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q3)
-#define RFNM_GRANITA0_TX_FC_RFAO2 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q4)
-#define RFNM_GRANITA0_TX_FC_RBI (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q5)
-#define RFNM_GRANITA0_TX_FC_RTA (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q6)
-#define RFNM_GRANITA0_TX_FC_RTO (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q7)
+#define RFNM_GRANITA0_FC_RFAO1 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q1)
+#define RFNM_GRANITA0_FC_RFAI2 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q2)
+#define RFNM_GRANITA0_FC_RFAI1 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q3)
+#define RFNM_GRANITA0_FC_RFAO2 (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q4)
+#define RFNM_GRANITA0_FC_RBI (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q5)
+#define RFNM_GRANITA0_FC_RTA (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q6)
+#define RFNM_GRANITA0_FC_RTO (RFNM_LATCH5 | RFNM_LATCH_SEQ2 | RFNM_LATCH_Q7)
 
 
 #endif 

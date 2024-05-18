@@ -9,11 +9,11 @@
 void granita0_fa_fm_notch(struct rfnm_dgb * dgb_dt, int en) {
 	// enabling notch when not using the frequency will mess with the paths
 	if(en) {
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 0);
 	} else {
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0);
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 1);
 	}
 }
 
@@ -26,8 +26,6 @@ void granita0_fa_filter_0_70(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 0); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 0); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 1);
 }
 
 void granita0_fa_filter_140_225(struct rfnm_dgb * dgb_dt) {
@@ -39,8 +37,6 @@ void granita0_fa_filter_140_225(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 1); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 0); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 1);
 }
 
 void granita0_fa_filter_0_1000(struct rfnm_dgb * dgb_dt) { 
@@ -52,8 +48,6 @@ void granita0_fa_filter_0_1000(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 1); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 1); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 1); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 1);
 }
 
 void granita0_fa_filter_420_700(struct rfnm_dgb * dgb_dt) {
@@ -65,8 +59,6 @@ void granita0_fa_filter_420_700(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_5, 0); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_6, 1); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_7, 0); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FA_9, 1);
 }
 
 void granita0_fa_filter_700_1000(struct rfnm_dgb * dgb_dt) {
@@ -211,11 +203,11 @@ void granita0_fa_filter_3000_5000(struct rfnm_dgb * dgb_dt) {
 void granita0_fb_fm_notch(struct rfnm_dgb * dgb_dt, int en) {
 	// enabling notch when not using the frequency will mess with the paths
 	if(en) {
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 1);
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 0);
 	} else {
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0);
-		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 1);
 	}
 }
 
@@ -228,8 +220,6 @@ void granita0_fb_filter_0_70(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 0); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 0); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 1);
 }
 
 void granita0_fb_filter_140_225(struct rfnm_dgb * dgb_dt) {
@@ -241,8 +231,6 @@ void granita0_fb_filter_140_225(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 1); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 0); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 1);
 }
 
 void granita0_fb_filter_0_1000(struct rfnm_dgb * dgb_dt) { 
@@ -254,8 +242,6 @@ void granita0_fb_filter_0_1000(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 1); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 1); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 1); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 1);
 }
 
 void granita0_fb_filter_420_700(struct rfnm_dgb * dgb_dt) {
@@ -267,8 +253,6 @@ void granita0_fb_filter_420_700(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_5, 0); // G1I2
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_6, 1); // G1O1
 	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_7, 0); // G1O2
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_8, 0); // disable fm filter by default
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FB_9, 1);
 }
 
 void granita0_fb_filter_700_1000(struct rfnm_dgb * dgb_dt) {
@@ -407,30 +391,94 @@ void granita0_fb_filter_3000_5000(struct rfnm_dgb * dgb_dt) {
 
 
 
-
-
-
-
-
-
-void granita0_rffc_rx_1166_1229(struct rfnm_dgb * dgb_dt) {
-	//printk("granita0_rffc_rx_1166_1229\n");
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RAI, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RBI, 0);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RTA, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RTB, 1);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFAO1, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFAO2, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFBO1, 0);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFBO2, 1);
-
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFAI1, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFAI2, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFBI1, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_TX_FC_RFBI2, 1);
+void granita0_rffc_rx_a(struct rfnm_dgb * dgb_dt) {
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RAI, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RTA, 1);
 }
+
+void granita0_rffc_rx_b(struct rfnm_dgb * dgb_dt) {
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RBI, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RTB, 1);
+}
+
+
+
+void granita0_rffc_rx_a_1166_1229(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_a_1166_1229\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI2, 1);
+}
+
+void granita0_rffc_rx_a_1574_1605(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_a_1574_1605\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI2, 1);
+}
+
+void granita0_rffc_rx_a_1574_1576(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_a_1574_1576\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO2, 0);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI2, 0);
+}
+
+
+
+
+
+void granita0_rffc_rx_b_1166_1229(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_b_1166_1229\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBO1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBI1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBI2, 1);
+}
+
+void granita0_rffc_rx_b_1574_1605(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_b_1574_1605\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFAI2, 1);
+}
+
+void granita0_rffc_rx_b_1574_1576(struct rfnm_dgb * dgb_dt) {
+	//printk("granita0_rffc_rx_b_1574_1576\n");
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBO1, 1);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBO2, 0);
+
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBI1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_GRANITA0_FC_RFBI2, 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void granita0_ant_a_through(struct rfnm_dgb * dgb_dt) {
@@ -759,9 +807,18 @@ void granita0_tx_freqsel(struct rfnm_dgb * dgb_dt, int freq) {
     }
 }
 
-void granita0_fa(struct rfnm_dgb * dgb_dt, int freq) {
+void granita0_fa(struct rfnm_dgb * dgb_dt, int freq, enum rfnm_fm_notch fm_notch) {
+
+	// hardware bug
+	fm_notch = RFNM_FM_NOTCH_OFF;
     
-    granita0_fa_fm_notch(dgb_dt, 1);
+	if(fm_notch == RFNM_FM_NOTCH_AUTO) {
+		granita0_fa_fm_notch(dgb_dt, 1);
+	} else if(fm_notch == RFNM_FM_NOTCH_ON) {
+		granita0_fa_fm_notch(dgb_dt, 1);
+	} else if(fm_notch == RFNM_FM_NOTCH_OFF) {
+		granita0_fa_fm_notch(dgb_dt, 0);
+	}
 
     if(freq < 600) {
         if(freq < 70) {
@@ -772,9 +829,9 @@ void granita0_fa(struct rfnm_dgb * dgb_dt, int freq) {
             granita0_fa_filter_420_700(dgb_dt);
         } else {
             granita0_fa_filter_0_1000(dgb_dt);
-            if(freq > 60 && freq < 130) {
-                granita0_fa_fm_notch(dgb_dt, 0);
-            }
+			if(freq > 60 && freq < 130 && fm_notch == RFNM_FM_NOTCH_AUTO) {
+				granita0_fa_fm_notch(dgb_dt, 0);
+			}
         }
     } else if(freq < 1000) {
         granita0_fa_filter_700_1000(dgb_dt);
@@ -805,9 +862,18 @@ void granita0_fa(struct rfnm_dgb * dgb_dt, int freq) {
     }    
 }
 
-void granita0_fb(struct rfnm_dgb * dgb_dt, int freq) {
+void granita0_fb(struct rfnm_dgb * dgb_dt, int freq, enum rfnm_fm_notch fm_notch) {
+
+	// hardware bug
+	fm_notch = RFNM_FM_NOTCH_OFF;
     
-    granita0_fb_fm_notch(dgb_dt, 1);
+	if(fm_notch == RFNM_FM_NOTCH_AUTO) {
+		granita0_fb_fm_notch(dgb_dt, 1);
+	} else if(fm_notch == RFNM_FM_NOTCH_ON) {
+		granita0_fb_fm_notch(dgb_dt, 1);
+	} else if(fm_notch == RFNM_FM_NOTCH_OFF) {
+		granita0_fb_fm_notch(dgb_dt, 0);
+	}
 
     if(freq < 600) {
         if(freq < 70) {
@@ -818,9 +884,9 @@ void granita0_fb(struct rfnm_dgb * dgb_dt, int freq) {
             granita0_fb_filter_420_700(dgb_dt);
         } else {
             granita0_fb_filter_0_1000(dgb_dt);
-            if(freq > 60 && freq < 130) {
-                granita0_fb_fm_notch(dgb_dt, 0);
-            }
+            if(freq > 60 && freq < 130 && fm_notch == RFNM_FM_NOTCH_AUTO) {
+				granita0_fb_fm_notch(dgb_dt, 0);
+			}
         }
     } else if(freq < 1000) {
         granita0_fb_filter_700_1000(dgb_dt);

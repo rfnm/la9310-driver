@@ -26,6 +26,7 @@ obj-m := la9310rfnm.o rfnm_usb_function.o rfnm_usb.o
 rfnm_granita-objs := rfnm_granita_m.o
 rfnm_granita-objs += rfnm_fe_generic.o 
 rfnm_granita-objs += rfnm_fe_granita0.o
+rfnm_granita-objs += rfnm_granita_rffc.o
 
 rfnm_granita-objs += ../../../granita_kernel/api/ErrHandling.o
 rfnm_granita-objs += ../../../granita_kernel/kernel/SiKernel.o
