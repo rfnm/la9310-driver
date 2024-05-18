@@ -368,10 +368,12 @@ int lime0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target) {
 		//printk("+20");
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2I, 0);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2O, 1);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_PA_S2, 0);
 		cur_power += 2000;
 	} else {
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2I, 1);
 		rfnm_fe_srb(dgb_dt, RFNM_LIME0_TL2O, 0);
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_PA_S2, 1);
 	}
 	
 	if(target < (cur_power - 2400)) {
