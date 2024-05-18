@@ -113,6 +113,15 @@ static inline uint32_t lms_interface_transact(void *handle, const uint32_t data,
         (((uint32_t)rxbuf[0]) << 0);
 }
 
+
+void rfnm_lime_set_bias_t(struct rfnm_dgb *dgb_dt, enum rfnm_bias_tee bias_tee) {
+	if(bias_tee == RFNM_BIAS_TEE_ON) {
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_BIAS, 0);
+	} else {
+		rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_BIAS, 1);
+	}
+}
+
 int parse_lime_iq_lpf(int mhz) {
 	if(mhz >= 100) {
 		return 100;
@@ -456,7 +465,7 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 		lime0_loopback(dgb_dt);
 	}
 
-	
+	rfnm_lime_set_bias_t(dgb_dt, tx_ch->bias_tee);
 
 	rfnm_fe_load_order(dgb_dt, RFNM_LO_LIME0_FA, RFNM_LO_LIME0_ANT, RFNM_LO_LIME0_TX, RFNM_LO_LIME0_END);
 
@@ -625,6 +634,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		lime0_disable_all_pa(dgb_dt);
 	}
 
+	rfnm_lime_set_bias_t(dgb_dt, rx_ch->bias_tee);
+
 	rfnm_fe_load_order(dgb_dt, RFNM_LO_LIME0_TX, RFNM_LO_LIME0_ANT, RFNM_LO_LIME0_FA, RFNM_LO_LIME0_END);
 
 	rfnm_fe_load_latches(dgb_dt);
@@ -707,9 +718,6 @@ static int rfnm_lime_probe(struct spi_device *spi)
 
 
 	rfnm_fe_generic_init(dgb_dt, RFNM_LIME0_NUM_LATCHES); 
-
-
-	
 
 
 	LMS7002M_t *lms;
@@ -797,6 +805,10 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	rfnm_fe_load_latches(dgb_dt);
 	rfnm_fe_trigger_latches(dgb_dt);
 */
+
+	rfnm_lime_set_bias_t(dgb_dt, RFNM_BIAS_TEE_OFF);
+	rfnm_fe_load_latches(dgb_dt);
+	rfnm_fe_trigger_latches(dgb_dt);
 
 
 	printk("RFNM: Lime daughterboard initialized\n");
