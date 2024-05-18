@@ -82,6 +82,24 @@ struct rfnm_granita_spi {
 	rfnm_daughterboard_register_cb()
 }*/
 
+
+
+void rfnm_granita_set_bias_t(int dgb_id, int ch, enum rfnm_bias_tee bias_tee) {
+	if(ch == 0) {
+		if(bias_tee == RFNM_BIAS_TEE_ON) {
+			rfnm_gpio_clear(dgb_id, RFNM_DGB_GPIO4_3); // FF_ANT_BIAS_A
+		} else {
+			rfnm_gpio_set(dgb_id, RFNM_DGB_GPIO4_3); // FF_ANT_BIAS_A
+		}
+	} else {
+		if(bias_tee == RFNM_BIAS_TEE_ON) {
+			rfnm_gpio_clear(dgb_id, RFNM_DGB_GPIO5_16); // FF_ANT_BIAS_B
+		} else {
+			rfnm_gpio_set(dgb_id, RFNM_DGB_GPIO5_16); // FF_ANT_BIAS_B
+		}
+	}
+}
+
 int parse_granita_iq_lpf(int mhz) {
 	if(mhz >= 400) {
 		return 400000;
@@ -185,6 +203,8 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 			granita0_tx_loopback(dgb_dt, 1);
 		}
 	}
+
+	rfnm_granita_set_bias_t(dgb_dt->dgb_id, tx_ch->dgb_ch_id, tx_ch->bias_tee);
 
 	rfnm_fe_load_latches(dgb_dt);
 	rfnm_fe_trigger_latches(dgb_dt);
@@ -403,6 +423,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		granita0_fb(dgb_dt, HZ_TO_MHZ(rx_ch->freq), rx_ch->fm_notch);
 	}
 
+	rfnm_granita_set_bias_t(dgb_dt->dgb_id, rx_ch->dgb_ch_id, rx_ch->bias_tee);
+
 	if(rx_ch->dgb_ch_id == 0) {
 		gr_api_id = 2;
 	} else {
@@ -520,6 +542,12 @@ static int rfnm_granita_probe(struct spi_device *spi)
 
 	rfnm_gpio_output(dgb_id, RFNM_DGB_GPIO4_7); // granita power
 	rfnm_gpio_output(dgb_id, RFNM_DGB_GPIO4_6); // granita nrst
+
+	rfnm_gpio_output(dgb_id, RFNM_DGB_GPIO4_3); // FF_ANT_BIAS_A
+	rfnm_gpio_output(dgb_id, RFNM_DGB_GPIO5_16); // FF_ANT_BIAS_B
+
+	rfnm_granita_set_bias_t(dgb_id, 0, RFNM_BIAS_TEE_OFF);
+	rfnm_granita_set_bias_t(dgb_id, 1, RFNM_BIAS_TEE_OFF);
 
 	rfnm_gpio_clear(dgb_id, RFNM_DGB_GPIO4_7); 
 	rfnm_gpio_clear(dgb_id, RFNM_DGB_GPIO4_6); 
