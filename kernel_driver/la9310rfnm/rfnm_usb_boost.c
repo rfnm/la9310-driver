@@ -190,6 +190,10 @@ static int rfnm_bind(struct usb_composite_dev *cdev)
 	if (IS_ERR(fi_rfnm))
 		return PTR_ERR(fi_rfnm);
 
+	status = usb_string_ids_tab(cdev, strings_dev);
+	if (status < 0)
+		goto fail;
+
 	struct rfnm_bootconfig *cfg;
 	cfg = memremap(RFNM_BOOTCONFIG_PHYADDR, SZ_4M, MEMREMAP_WB);
 	memcpy(rfnm_serial, cfg->motherboard_eeprom.serial_number, 8);
