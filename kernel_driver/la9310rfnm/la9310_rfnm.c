@@ -490,9 +490,17 @@ try_input:
 		}
 #endif
 
+#if 0
+	struct rfnm_rx_usb_buf *rfnm_rx_usb_buf_t;
 
+	rfnm_rx_usb_buf_t = usb_ep_queue_ele->req->buf;
 
-
+	static int d_dbg = 0;
+				if(++d_dbg == 4) {
+					d_dbg = 0;
+					printk("Q %ld\n", rfnm_rx_usb_buf_t->usb_cc);
+				}
+#endif
 		//memset(((uint8_t*) usb_ep_queue_ele->req->buf) + 32, 0xee, 16);
 
 		status = usb_ep_queue(usb_ep_queue_ele->ep, usb_ep_queue_ele->req, GFP_ATOMIC);
@@ -740,6 +748,8 @@ while(1) {
 
 
 				//printk("Q %lx\n", usb_ep_queue_ele->req->buf);
+				
+					
 
 
 #if 0

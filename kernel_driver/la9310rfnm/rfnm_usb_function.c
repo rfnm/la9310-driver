@@ -562,7 +562,7 @@ static int source_sink_start_ep_out(struct f_sourcesink *ss, struct usb_ep *ep)
 	// probably because original driver had fixed qlen=1
 	// I have a feeling that qlen=8 might have better performances
 	
-	qlen = 16;
+	qlen = 8;
 	size = RFNM_USB_TX_PACKET_SIZE;
 
 	printk("out ep qlen %d size %d\n", qlen, size);
