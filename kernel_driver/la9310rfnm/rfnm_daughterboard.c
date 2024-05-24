@@ -97,8 +97,6 @@ void rfnm_populate_dev_hwinfo(struct rfnm_dev_hwinfo * r_hwinfo) {
 		r_hwinfo->clock.dcs_clk = MHZ_TO_HZ(122.88);
 	}
 
-	printk("%d\n", r_hwinfo->clock.dcs_clk);
-
 	r_hwinfo->motherboard.board_id = bootcfg->motherboard_eeprom.board_id;
 	r_hwinfo->motherboard.board_revision_id = bootcfg->motherboard_eeprom.board_revision_id;
 	
@@ -283,7 +281,7 @@ void rfnm_apply_dev_rx_chlist_work(struct work_struct * tasklet_data) {
 #if 1
 			if (((1 << q) & r_rx_chlist_work.apply)) {
 				int ecode = rfnm_dgb_rx_set(rfnm_dgb[i], rfnm_dgb[i]->rx_ch[q]);				
-				printk("rx ch %d code %d\n", q, ecode);
+				printk("rx ch %d code %d freq %ld\n", q, ecode, rfnm_dgb[i]->rx_ch[q]->freq);
 				rfnm_dev_work_res.rx_ecodes[q] = -ecode;
 			}			
 #endif
