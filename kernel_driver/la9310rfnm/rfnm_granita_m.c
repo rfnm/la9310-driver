@@ -52,12 +52,17 @@
 #include "SiGranitaP_Core.h"
 #include "SiDrv.h"
 
+#include <linux/i2c.h>
+
 //#include "fe_generic.h"
 //#include "fe_granita.h"
 
 #include "rfnm_granita.h"
 
 char SiCoreChar[3] = {'a', 'b', 0};
+
+struct i2c_client *si5510_i2c_client;
+struct device *si5510_i2c_dev;
 
 /*
 void __iomem *gpio4_iomem;
@@ -341,6 +346,7 @@ fail:
 http://mail.spinics.net/lists/linux-spi/msg34523.html
 
 */
+void rfnm_si5510_set_output_status(struct i2c_client *client, int output_id, int enable_disable);
 
 int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
@@ -434,6 +440,13 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	uint64_t freq = rx_ch->freq;
 
 	if(rx_ch->freq < MHZ_TO_HZ(600)) {
+
+		if(dgb_dt->dgb_id == 0) {
+		//	rfnm_si5510_set_output_status(si5510_i2c_client, 15, 1);
+		} else {
+		//	rfnm_si5510_set_output_status(si5510_i2c_client, 2, 1);			
+		}
+
 		rfnm_rffc_init(dgb_dt);
 
 		int tsf;
@@ -469,6 +482,12 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	} else {
 		rfnm_rffc_deinit(dgb_dt);
+
+		if(dgb_dt->dgb_id == 0) {
+		//	rfnm_si5510_set_output_status(si5510_i2c_client, 15, 0);
+		} else {
+		//	rfnm_si5510_set_output_status(si5510_i2c_client, 2, 0);			
+		}
 	}
 
 
@@ -603,6 +622,18 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	printk("RFNM: Granita daughterboard initialized\n");
 
 	//rfnm_daughterboard_register_cb(slot, RFNM_CB_RX_TUNE);
+
+
+	
+	si5510_i2c_dev = bus_find_device_by_name(&i2c_bus_type, NULL, "0-0058");
+	if (!si5510_i2c_dev) {
+		printk("Couldn't find i2c device\n");
+	} else {
+		si5510_i2c_client = i2c_verify_client(si5510_i2c_dev);
+		if (!si5510_i2c_client) {
+			printk("Couldn't find i2c client\n");
+		}
+	}
 	
 
 
@@ -677,6 +708,9 @@ static int rfnm_granita_remove(struct spi_device *spi)
 	//ctlr = dev_get_drvdata(&pdev->dev);
 	//spi_unregister_controller(ctlr);
 	rfnm_dgb_unreg(dgb_dt); 
+
+	put_device(si5510_i2c_dev);
+
 	return 0;
 }
 
