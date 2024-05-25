@@ -123,6 +123,7 @@ RFNM_PACKED_STRUCT(
 		uint32_t read;
 		// (64 - (4 * 5)) / 4 = 22
 		uint32_t pad_to_64[10];
+		uint32_t pad_to_128[16];
 	}
 ); 
 

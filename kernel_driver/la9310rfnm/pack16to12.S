@@ -215,6 +215,29 @@ void autovectorized (uint8_t * restrict dst, int16_t * restrict src, size_t byte
 
 
 
+// clang
+
+
+static inline int16_t sign_magnitude_to_i16(int16_t x) {
+    int16_t m = x >> 15;
+    return (~m & x) | (((x & 0x8000u) - x) & m);
+}
+
+void autovectorized (uint8_t * restrict dst, int16_t * restrict src, size_t byte_count)
+{
+    if (byte_count & 63)
+        __builtin_unreachable();
+
+    for (size_t samples_copied = 0; samples_copied < byte_count/4; samples_copied++) {
+        int16_t i = sign_magnitude_to_i16(src[samples_copied*2]) >> 4;
+        int16_t q = sign_magnitude_to_i16(src[samples_copied*2+1]) >> 4;
+        dst[samples_copied*3] = i & 0xFF;
+        dst[samples_copied*3+1] = ((i >> 8) & 0xF) | ((q << 4) & 0xF0);
+        dst[samples_copied*3+2] = (q >> 4) & 0xFF;
+    } 
+}
+
+
 
  
  
