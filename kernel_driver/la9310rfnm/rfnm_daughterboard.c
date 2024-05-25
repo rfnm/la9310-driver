@@ -52,28 +52,47 @@ volatile uint32_t *gpout_vmem;
 uint8_t rfnm_rx_adc_s[4];
 uint8_t rfnm_tx_dac_s;
 
-int abs_ch_cnt = 0;
+int abs_ch_cnt_tx = 0;
+int abs_ch_cnt_rx = 0;
 
 
 void rfnm_dgb_reg_rx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch, struct rfnm_api_rx_ch * rx_s) {
 	int dgb_slot = dgb_dt->dgb_id;
 	rfnm_dgb[dgb_slot] = dgb_dt;
+	rx_ch->dgb_id = dgb_slot;
 	rx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->rx_ch_cnt;
-	rx_ch->abs_id = abs_ch_cnt++;
+	rx_ch->abs_id = abs_ch_cnt_rx++;
 	rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id] = rx_ch;
 	rfnm_dgb[dgb_slot]->rx_s[rx_ch->dgb_ch_id] = rx_s;
 	rfnm_dgb[dgb_slot]->rx_ch_cnt++;
+
+#if 0
+	printk("rx abs_id %d dgb_ch_id %d dgb_id %d adc_id %d\n",
+				rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id]->abs_id, 
+				rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id]->dgb_ch_id, 
+				rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id]->dgb_id, 
+				rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id]->adc_id);
+#endif
 }
 EXPORT_SYMBOL(rfnm_dgb_reg_rx_ch);
 
 void rfnm_dgb_reg_tx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_tx_ch * tx_s) { 
 	int dgb_slot = dgb_dt->dgb_id;
 	rfnm_dgb[dgb_slot] = dgb_dt;
+	tx_ch->dgb_id = dgb_slot;
 	tx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->tx_ch_cnt;
-	tx_ch->abs_id = abs_ch_cnt++;
+	tx_ch->abs_id = abs_ch_cnt_tx++;
 	rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id] = tx_ch;
 	rfnm_dgb[dgb_slot]->tx_s[tx_ch->dgb_ch_id] = tx_s;
 	rfnm_dgb[dgb_slot]->tx_ch_cnt++;
+
+#if 0
+	printk("tx abs_id %d dgb_ch_id %d dgb_id %d dac_id %d\n",
+				rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id]->abs_id, 
+				rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id]->dgb_ch_id, 
+				rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id]->dgb_id, 
+				rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id]->dac_id);
+#endif
 }
 EXPORT_SYMBOL(rfnm_dgb_reg_tx_ch);
 
@@ -251,7 +270,7 @@ void rfnm_apply_dev_tx_chlist_work(struct work_struct * tasklet_data) {
 		for(q = 0; q < rfnm_dgb[i]->tx_ch_cnt; q++) {
 			memcpy(rfnm_dgb[i]->tx_ch[q], &r_tx_chlist_work.ch[d], sizeof(struct rfnm_api_tx_ch));
 #if 1
-			if (((1 << q) & r_tx_chlist_work.apply)) {
+			if (((1 << rfnm_dgb[i]->tx_ch[q]->abs_id) & r_tx_chlist_work.apply)) {
 				int ecode = rfnm_dgb_tx_set(rfnm_dgb[i], rfnm_dgb[i]->tx_ch[q]);
 				printk("tx ch %d code %d\n", q, ecode);	
 				rfnm_dev_work_res.tx_ecodes[q] = -ecode;
@@ -279,11 +298,11 @@ void rfnm_apply_dev_rx_chlist_work(struct work_struct * tasklet_data) {
 		for(q = 0; q < rfnm_dgb[i]->rx_ch_cnt; q++) {
 			memcpy(rfnm_dgb[i]->rx_ch[q], &r_rx_chlist_work.ch[d], sizeof(struct rfnm_api_rx_ch));
 #if 1
-			if (((1 << q) & r_rx_chlist_work.apply)) {
+			if (((1 << rfnm_dgb[i]->rx_ch[q]->abs_id) & r_rx_chlist_work.apply)) {
 				int ecode = rfnm_dgb_rx_set(rfnm_dgb[i], rfnm_dgb[i]->rx_ch[q]);				
 				printk("rx ch %d code %d freq %ld\n", q, ecode, rfnm_dgb[i]->rx_ch[q]->freq);
 				rfnm_dev_work_res.rx_ecodes[q] = -ecode;
-			}			
+			}
 #endif
 			d++;
 		}
