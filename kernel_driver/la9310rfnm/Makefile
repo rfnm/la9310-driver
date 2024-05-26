@@ -12,7 +12,7 @@ ccflags-y += -g -DDEBUG
 endif
 
 ccflags-y += -I${LA9310_DRV_HEADER_DIR} -I${LA9310_COMMON_HEADERS} 
-ccflags-y += -I/home/davide/granita_kernel/system  -I/home/davide/granita_kernel/core -I/home/davide/granita_kernel/api -I/home/davide/granita_kernel/kernel
+ccflags-y += -I/home/davide/g_icewings/system  -I/home/davide/g_icewings/core -I/home/davide/g_icewings/api -I/home/davide/g_icewings/kernel
 
 ccflags-y += -I/home/davide/LMS7002M_kernel/include -I/home/davide/LMS7002M_kernel/interfaces -I/home/davide/LMS7002M_kernel/src
 
@@ -28,11 +28,11 @@ rfnm_granita-objs += rfnm_fe_generic.o
 rfnm_granita-objs += rfnm_fe_granita0.o
 rfnm_granita-objs += rfnm_granita_rffc.o
 
-rfnm_granita-objs += ../../../granita_kernel/api/ErrHandling.o
-rfnm_granita-objs += ../../../granita_kernel/kernel/SiKernel.o
-rfnm_granita-objs += ../../../granita_kernel/system/SiSystem.o
-rfnm_granita-objs += ../../../granita_kernel/api/SiGranitaP_parser.o
-rfnm_granita-objs += ../../../granita_kernel/core/SiGranitaP_Core.o 
+rfnm_granita-objs += ../../../g_icewings/api/ErrHandling.o
+rfnm_granita-objs += ../../../g_icewings/kernel/SiKernel.o
+rfnm_granita-objs += ../../../g_icewings/system/SiSystem.o
+rfnm_granita-objs += ../../../g_icewings/api/SiIceWing_parser.o
+rfnm_granita-objs += ../../../g_icewings/core/SiIceWing_Core.o 
 
 
 

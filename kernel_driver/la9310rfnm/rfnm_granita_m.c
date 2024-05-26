@@ -48,8 +48,8 @@
 #include "rfnm_fe_granita0.h"
 
 #include "SiSystem.h"
-#include "SiGranitaP_parser.h"
-#include "SiGranitaP_Core.h"
+#include "SiIceWing_parser.h"
+#include "SiIceWing_Core.h"
 #include "SiDrv.h"
 
 #include <linux/i2c.h>
@@ -141,25 +141,30 @@ void rfnm_rx_ch_get(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	printk("inside rfnm_rx_ch_get\n");
 }
 
+#define SIAPI_PATH_B (1 << 1)
+#define SIAPI_PATH_A (1 << 3)
+#define SIAPI_PATH_ALL (SIAPI_PATH_B | SIAPI_PATH_A)
+
+
 int rfnm_granita_tdd(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_rx_ch * rx_ch) {
 	int ret;
 	rfnm_api_failcode ecode = RFNM_API_OK;
 	printk("RFNM: TDD rx %d tx %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
-	ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
+	ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_ALL, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_ch->freq));
 	if(ret) {
 		printk("SiAPILoopback wouldn't return nice things\n");
 		ecode = RFNM_API_TUNE_FAIL;
 		goto fail;
 	}
 
-	ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, rx_ch->gain);
+	ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_ALL, rx_ch->gain);
 	if(ret) {
 		printk("SiAPIRXGAIN failed\n");
 		ecode = RFNM_API_GAIN_FAIL;
 		goto fail;
 	}
 
-	ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, /*tx_ch->power*/ 48);
+	ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_B, /*tx_ch->power*/ 48);
 	if(ret) {
 		printk("SiAPITXGAIN wouldn't return nice things\n");
 		ecode = RFNM_API_GAIN_FAIL;
@@ -217,14 +222,14 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 
 
 	if(tx_ch->path != RFNM_PATH_LOOPBACK && tx_ch->enable != RFNM_CH_ON_TDD) {
-		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], 1, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->rfic_lpf_bw));
+		ret = SiAPIPowerUpTX(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_B, HZ_TO_KHZ(tx_ch->freq), parse_granita_iq_lpf(tx_ch->rfic_lpf_bw));
 		if(ret) {
 			printk("SiAPIPowerUpTX wouldn't return nice things\n");
 			ecode = RFNM_API_TUNE_FAIL;
 			goto fail;
 		}
 
-		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, 48);
+		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_B, 48);
 		if(ret) {
 			printk("SiAPITXGAIN wouldn't return nice things\n");
 			ecode = RFNM_API_GAIN_FAIL;
@@ -246,21 +251,21 @@ int rfnm_tx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch) {
 			goto fail;
 		}
 		printk("%d %d\n", HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
-		ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], 3, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
+		ret = SiAPILoopback(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_ALL, HZ_TO_KHZ(tx_ch->freq), HZ_TO_KHZ(rx_freq));
 		if(ret) {
 			printk("SiAPILoopback wouldn't return nice things\n");
 			ecode = RFNM_API_TUNE_FAIL;
 			goto fail;
 		}
 
-		ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], 3, 0);
+		ret = SiAPIRXGAIN(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_ALL, 0);
 		if(ret) {
 			printk("SiAPIRXGAIN failed\n");
 			ecode = RFNM_API_GAIN_FAIL;
 			goto fail;
 		}
 
-		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], 1, tx_ch->power);
+		ret = SiAPITXGAIN(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_B, tx_ch->power);
 		if(ret) {
 			printk("SiAPITXGAIN wouldn't return nice things\n");
 			ecode = RFNM_API_GAIN_FAIL;
@@ -432,9 +437,9 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	rfnm_granita_set_bias_t(dgb_dt->dgb_id, rx_ch->dgb_ch_id, rx_ch->bias_tee);
 
 	if(rx_ch->dgb_ch_id == 0) {
-		gr_api_id = 2;
+		gr_api_id = SIAPI_PATH_A;
 	} else {
-		gr_api_id = 1;
+		gr_api_id = SIAPI_PATH_B;
 	}
 
 	uint64_t freq = rx_ch->freq;
@@ -607,17 +612,34 @@ static int rfnm_granita_probe(struct spi_device *spi)
 
     dgb_dt->priv_drv = kmalloc (100, GFP_KERNEL );
 
+	
+
+	
+
     ret = SiAPIOpen(SiCoreChar[dgb_dt->dgb_id], dgb_dt->priv_drv, spi);
     if(ret) {
         printk("Si core wouldn't open\n");
         return -1;
     }
+	//int z;
+	//for(z = 0; z < 100; z++) {
+	//	ret = SiAPISPITest(SiCoreChar[dgb_dt->dgb_id]);
+    //	printk("SiAPISPITest %d\n", ret);
+	//}
 
-	ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], 2, 1850 * 1000, 100000);
+	ret = SiAPISPITest(SiCoreChar[dgb_dt->dgb_id]);
 	if(ret) {
+		printk("Si core wouldn't open\n");
 		return -1;
 		//printf("SiAPIPowerUpRX wouldn't return nice things\n");
 	}
+	
+
+	//ret = SiAPIPowerUpRX(SiCoreChar[dgb_dt->dgb_id], SIAPI_PATH_A, 1850 * 1000, 100000);
+	//if(ret) {
+	//	return -1;
+		//printf("SiAPIPowerUpRX wouldn't return nice things\n");
+	//}
 
 	printk("RFNM: Granita daughterboard initialized\n");
 
