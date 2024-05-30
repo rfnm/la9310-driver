@@ -495,6 +495,18 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		}
 	}
 
+#if 0
+	rfnm_gpio_output(0, RFNM_GPIO4_26); 
+	rfnm_gpio_output(0, RFNM_GPIO4_30); 
+
+	if(rx_ch->dgb_ch_id == 1) {
+		rfnm_gpio_clear(0, RFNM_GPIO4_26); 
+		rfnm_gpio_set(0, RFNM_GPIO4_30); 
+	} else {
+		rfnm_gpio_set(0, RFNM_GPIO4_26); 
+		rfnm_gpio_clear(0, RFNM_GPIO4_30); 
+	}
+#endif
 
 	rfnm_fe_load_latches(dgb_dt);
 	rfnm_fe_trigger_latches(dgb_dt);
@@ -540,6 +552,8 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	
 fail: 
+	//if(ecode)
+	//	printk("freq %ld retcode %d\n",freq,  ecode);
 	return -ecode;
 }
 
