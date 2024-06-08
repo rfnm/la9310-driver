@@ -12,10 +12,10 @@ endif
 RFNM_BUILD_DIR = /home/davide
 
 ccflags-y += -I${LA9310_DRV_HEADER_DIR} -I${LA9310_COMMON_HEADERS} 
+ccflags-y += -I${RFNM_BUILD_DIR}/la9310-driver/LimeSuiteNG/embedded/include
 ccflags-y += -I${RFNM_BUILD_DIR}/g_icewings/system  -I${RFNM_BUILD_DIR}/g_icewings/core -I${RFNM_BUILD_DIR}/g_icewings/api -I${RFNM_BUILD_DIR}/g_icewings/kernel
-
-ccflags-y += -I${RFNM_BUILD_DIR}/lms7002m-antique/include -I${RFNM_BUILD_DIR}/lms7002m-antique/interfaces -I${RFNM_BUILD_DIR}/lms7002m-antique/src
 ccflags-y += -I${RFNM_BUILD_DIR}/la9310-driver/kernel_driver/la9310rfnm
+ccflags-y += -I${KERNEL_DIR}
 
 
 
@@ -39,31 +39,9 @@ rfnm_granita-objs += ../../../g_icewings/core/SiIceWing_Core.o
 rfnm_lime-objs := rfnm_lime_m.o 
 rfnm_lime-objs += rfnm_fe_generic.o 
 rfnm_lime-objs += rfnm_fe_lime0.o 
-rfnm_lime-objs += dtoa.o 
 
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_afe.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_logger.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_tbb.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_cgen.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_nco.o 
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_time.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_filter_cal.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_rbb.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_trf.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_gfir.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_rfe.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_tx_filter_cal.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_impl.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_rx_filter_cal.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_txtsp.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_ldo.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_rxtsp.o 
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_vco.o
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_lml.o 
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_sxx.o 
-rfnm_lime-objs += ../../../lms7002m-antique/src/LMS7002M_xbuf.o
-
-
+rfnm_lime-objs += ../../LimeSuiteNG/embedded/lms7002m/lms7002m.o
+rfnm_lime-objs += ../../LimeSuiteNG/embedded/lms7002m/privates.o
 
 rfnm_breakout-objs := rfnm_breakout_m.o 
 

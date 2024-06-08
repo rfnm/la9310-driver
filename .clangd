@@ -1,0 +1,8 @@
+CompileFlags:
+    Remove: [
+        -fno-allow-store-data-races,
+        -enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang,
+        -femit-struct-debug-baseonly,
+        -fconserve-stack,
+        -mabi=lp64
+    ]
