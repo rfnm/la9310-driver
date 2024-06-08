@@ -382,22 +382,31 @@ void lime0_set_iq_tx_lpf_bandwidth(struct rfnm_dgb *dgb_dt, int txbw) {
 	}
 }
 
-void lime0_set_rx_gain(struct rfnm_dgb *dgb_dt, int dbm) {
+void lime0_set_rx_gain(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	LMS7002M_t *lms;
     lms = dgb_dt->priv_drv;
+	int dbm = rx_ch->gain;
 
-	if(dbm < -12) {
-		// enable 24 dB attenuator
-		dbm += 24;
-		lime0_ant_attn_24(dgb_dt);
-	} else if(dbm < 0) {
-		// enable 12 dB attenuator
-		dbm += 12;
-		lime0_ant_attn_12(dgb_dt);
+	if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
+		lime0_ant_embed(dgb_dt);
+		printk("embed\n");
 	} else {
-		lime0_ant_through(dgb_dt);
+		printk("not embed\n");
+		if(dbm < -12) {
+			// enable 24 dB attenuator
+			dbm += 24;
+			lime0_ant_attn_24(dgb_dt);
+		} else if(dbm < 0) {
+			// enable 12 dB attenuator
+			dbm += 12;
+			lime0_ant_attn_12(dgb_dt);
+		} else {
+			lime0_ant_through(dgb_dt);
+		}
 	}
+
+	
 
     //std::cout << "lms_gain_lna [0-30]" << endl;
     if(dbm > 0) {
@@ -625,7 +634,7 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	//LMS7002M_trf_enable(lms, LMS_CHA, false);
 
 	
-	lime0_set_rx_gain(dgb_dt, rx_ch->gain);
+	lime0_set_rx_gain(dgb_dt, rx_ch);
 
 	if(rx_ch->path != RFNM_PATH_LOOPBACK) {
 		lime0_tx_power(dgb_dt, 1000, -100);

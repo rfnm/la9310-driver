@@ -434,6 +434,13 @@ void lime0_ant_loopback(struct rfnm_dgb * dgb_dt) {
 
 }*/
 
+void lime0_ant_embed(struct rfnm_dgb * dgb_dt) {
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_E, 1);
+}
+
 void lime0_ant_through(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_A, 0);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 0);
@@ -446,8 +453,10 @@ void lime0_ant_attn_12(struct rfnm_dgb * dgb_dt) {
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AI1, 1);
 	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AI2, 1);
 
-	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 1);
-	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO2, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO1, 0);
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_AO2, 1);
+
+	rfnm_fe_srb(dgb_dt, RFNM_LIME0_ANT_E, 0);
 }
 
 void lime0_ant_attn_24(struct rfnm_dgb * dgb_dt) {

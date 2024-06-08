@@ -40,6 +40,7 @@ int lime0_tx_power(struct rfnm_dgb * dgb_dt, int freq, int target);
 void lime0_ant_tx(struct rfnm_dgb * dgb_dt);
 void lime0_ant_loopback(struct rfnm_dgb * dgb_dt);
 void lime0_ant_through(struct rfnm_dgb * dgb_dt);
+void lime0_ant_embed(struct rfnm_dgb * dgb_dt);
 void lime0_ant_attn_12(struct rfnm_dgb * dgb_dt);
 void lime0_ant_attn_24(struct rfnm_dgb * dgb_dt);
 
