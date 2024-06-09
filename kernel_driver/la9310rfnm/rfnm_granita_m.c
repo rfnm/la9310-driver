@@ -694,6 +694,8 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	tx_ch->path_possible[0] = RFNM_PATH_SMA_B;
 	tx_ch->path_possible[1] = RFNM_PATH_SMA_A;
 	tx_ch->path_possible[2] = RFNM_PATH_NULL;
+	tx_ch->power_range.min = -60;
+	tx_ch->power_range.max = 30;
 
 	tx_ch->dac_id = 0;
 	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
@@ -705,6 +707,8 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	rx_ch[0]->path_possible[1] = RFNM_PATH_SMA_B;
 	rx_ch[0]->path_possible[2] = RFNM_PATH_EMBED_ANT;
 	rx_ch[0]->path_possible[3] = RFNM_PATH_NULL;
+	rx_ch[0]->gain_range.min = -40;
+	rx_ch[0]->gain_range.max = 60;
 
 	rx_ch[0]->adc_id = 1;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[0], rx_s[0]);
@@ -716,6 +720,9 @@ static int rfnm_granita_probe(struct spi_device *spi)
 	rx_ch[1]->path_possible[1] = RFNM_PATH_SMA_A;
 	rx_ch[1]->path_possible[2] = RFNM_PATH_EMBED_ANT;
 	rx_ch[1]->path_possible[3] = RFNM_PATH_NULL;
+	rx_ch[0]->gain_range.min = -40;
+	rx_ch[0]->gain_range.max = 60;
+
 	rx_ch[1]->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch[1], rx_s[1]);
 
