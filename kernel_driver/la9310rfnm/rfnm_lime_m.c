@@ -409,7 +409,7 @@ void lime0_set_rx_gain(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 	
 
     //std::cout << "lms_gain_lna [0-30]" << endl;
-    if(dbm > 0) {
+    if(dbm >= 0) {
         if(dbm > 30) {
             dbm = 30;
         }
@@ -854,8 +854,8 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	rx_ch->path_possible[0] = RFNM_PATH_SMA_A;
 	rx_ch->path_possible[1] = RFNM_PATH_EMBED_ANT;
 	rx_ch->path_possible[2] = RFNM_PATH_NULL;
-	rx_ch->gain_range.min = -40;
-	rx_ch->gain_range.max = 60;
+	rx_ch->gain_range.min = -24;
+	rx_ch->gain_range.max = 30;
 	rx_ch->adc_id = 0;
 	rfnm_dgb_reg_rx_ch(dgb_dt, rx_ch, rx_s);
 
