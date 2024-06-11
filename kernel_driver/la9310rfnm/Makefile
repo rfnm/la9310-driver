@@ -60,5 +60,8 @@ obj-m += rfnm_usb_boost.o
 #obj-m += rfnm_kasan.o
 obj-m += rfnm_lalib.o
 
-la9310rfnm-objs := la9310_rfnm.o  cache.o pack16to12.o unpack12to16.o
+la9310rfnm-objs := la9310_rfnm.o rfnm_neon.o cache.o pack16to12.o unpack12to16.o
 
+CFLAGS_REMOVE_rfnm_neon.o += -mgeneral-regs-only
+CFLAGS_REMOVE_rfnm_granita_rffc.o += -mgeneral-regs-only
+CFLAGS_REMOVE_../../../g_icewings/system/SiSystem.o += -mgeneral-regs-only

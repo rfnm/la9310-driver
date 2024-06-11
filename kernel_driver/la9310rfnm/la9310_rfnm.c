@@ -62,6 +62,10 @@ DECLARE_WAIT_QUEUE_HEAD(wq_usb);
 
 #define RFNM_ADC_BUFCNT (0x4000) // 4096 ~= 10ms
 
+void rfnm_pack16to12_aarch64_wrapper(uint8_t * dest, uint8_t * src, uint32_t bytes);
+void rfnm_unpack12to16_aarch64_wrapper(uint8_t * dest, uint8_t * src, uint32_t bytes);
+
+
 
 
 volatile int countdown_to_print = 0;
@@ -854,11 +858,11 @@ while(1) {
 
 #if 1
 		//if(GPIO_DEBUG) rfnm_gpio_set(0, RFNM_DGB_GPIO4_4);
-		kernel_neon_begin();
-		rfnm_pack16to12_aarch64( (uint8_t *) &rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].buf[LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]], 
+		//kernel_neon_begin();
+		rfnm_pack16to12_aarch64_wrapper( (uint8_t *) &rfnm_rx_usb_buf[rfnm_dev->rx_usb_cb.adc_buf[la_adc_id]].buf[LA_RX_BASE_BUFSIZE_12 * rfnm_dev->rx_usb_cb.adc_buf_cnt[la_adc_id]], 
 					(uint8_t *) rfnm_bufdesc_rx[la_tail].buf, 
 					LA_RX_BASE_BUFSIZE / 1);
-		kernel_neon_end();
+		//kernel_neon_end();
 		//if(GPIO_DEBUG) rfnm_gpio_clear(0, RFNM_DGB_GPIO4_4);	
 
 #endif
@@ -1177,12 +1181,12 @@ rfnm_tx_la_cb
 				//
 				// LA_TX_BASE_BUFSIZE_12 * RFNM_TX_USB_BUF_MULTI
 #if 1
-				kernel_neon_begin();
-				rfnm_unpack12to16_aarch64( 
+				//kernel_neon_begin();
+				rfnm_unpack12to16_aarch64_wrapper( 
 							(uint8_t *) rfnm_bufdesc_tx[rfnm_dev->tx_la_cb.head].buf,
 							(uint8_t *) &lb->buf[ w * LA_TX_BASE_BUFSIZE_12 ],
 							LA_TX_BASE_BUFSIZE);
-				kernel_neon_end();
+				//kernel_neon_end();
 #endif
 
 #if 0
