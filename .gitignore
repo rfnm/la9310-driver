@@ -6,11 +6,14 @@
 *.ko.*
 *.so
 *.so.dbg
+*.mod
 *.mod.c
+*.mod.cmd
 *.i
 *.lst
 *.symtypes
 *.order
+*.order.cmd
 *.elf
 *.tar
 *.gz
@@ -23,6 +26,7 @@
 *.gcno
 modules.builtin
 Module.symvers
+.Module.symvers.cmd
 .tmp_versions
 .depend
 *.dwo
@@ -38,3 +42,5 @@ app/bincreate/bin_create
 app/wdog/la9310_wdog_testapp
 install
 la931x_common_headers*
+
+.cache

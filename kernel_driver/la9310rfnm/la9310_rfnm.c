@@ -34,8 +34,8 @@
 #include <linux/usb/composite.h>
 #include <linux/err.h>
 
-#include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/function/g_zero.h"
-#include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/u_f.h"
+#include "drivers/usb/gadget/function/g_zero.h"
+#include "drivers/usb/gadget/u_f.h"
 
 #include <linux/delay.h>
 

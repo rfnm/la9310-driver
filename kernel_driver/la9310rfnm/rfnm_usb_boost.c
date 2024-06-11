@@ -29,7 +29,7 @@
 #include <linux/io.h>
 #include <linux/rfnm-shared.h>
 
-#include "/home/davide/imx-rfnm-bsp/build/tmp/work-shared/imx8mp-rfnm/kernel-source/drivers/usb/gadget/function/f_mass_storage.h"
+#include "drivers/usb/gadget/function/f_mass_storage.h"
 
 /*-------------------------------------------------------------------------*/
 USB_GADGET_COMPOSITE_OPTIONS();
