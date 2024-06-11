@@ -39,6 +39,7 @@
 #include <linux/spi/spi.h>
 
 #include "limesuiteng/embedded/lms7002m/lms7002m.h"
+#include "limesuiteng/embedded/loglevel.h"
 
 #include "rfnm_lime0_regs.h"
 
@@ -246,9 +247,9 @@ void lime0_set_rx_gain(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 
 	if(rx_ch->path == RFNM_PATH_EMBED_ANT) {
 		lime0_ant_embed(dgb_dt);
-		printk("embed\n");
+		//printk("embed\n");
 	} else {
-		printk("not embed\n");
+		//printk("not embed\n");
 		if(dbm < -12) {
 			// enable 24 dB attenuator
 			dbm += 24;
@@ -481,9 +482,12 @@ fail:
 }
 
 static void rfnm_lime_log_callback(int level, const char* message, void* handle) {
-	(void) level;
 	(void) handle;
-	printk(message);
+
+	if(level <= lime_LogLevel_Error) {
+		printk(message);
+	}
+	
 }
 
 static void rfnm_lime_cgen_frequency_changed(void* handle) {
