@@ -62,6 +62,7 @@ void rfnm_dgb_reg_rx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch, 
 	rx_ch->dgb_id = dgb_slot;
 	rx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->rx_ch_cnt;
 	rx_ch->abs_id = abs_ch_cnt_rx++;
+	rx_ch->adc_id += dgb_slot * 2;
 	rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id] = rx_ch;
 	rfnm_dgb[dgb_slot]->rx_s[rx_ch->dgb_ch_id] = rx_s;
 	rfnm_dgb[dgb_slot]->rx_ch_cnt++;
