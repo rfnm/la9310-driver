@@ -640,24 +640,31 @@ static int rfnm_lime_probe(struct spi_device *spi)
 	struct rfnm_api_tx_ch *tx_ch, *tx_s;
 	struct rfnm_api_rx_ch *rx_ch, *rx_s;
 
-	tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+	if (dgb_id == 0) {
+		tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+		tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+		if (!tx_ch || !tx_s) {
+			return -ENOMEM;
+		}
+	}
 	rx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
-	tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
 	rx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
 
-	if(!tx_ch || !rx_ch || !tx_s || !rx_s) {
+	if(!rx_ch || !rx_s) {
 		return -ENOMEM;
 	}
 
-	tx_ch->freq_max = MHZ_TO_HZ(3500);
-	tx_ch->freq_min = MHZ_TO_HZ(10);
-	tx_ch->path_preferred = RFNM_PATH_SMA_A;
-	tx_ch->path_possible[0] = RFNM_PATH_SMA_A;
-	tx_ch->path_possible[1] = RFNM_PATH_NULL;
-	tx_ch->power_range.min = -60;
-	tx_ch->power_range.max = 30;
-	tx_ch->dac_id = 0;
-	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
+	if (dgb_id == 0) {
+		tx_ch->freq_max = MHZ_TO_HZ(3500);
+		tx_ch->freq_min = MHZ_TO_HZ(10);
+		tx_ch->path_preferred = RFNM_PATH_SMA_A;
+		tx_ch->path_possible[0] = RFNM_PATH_SMA_A;
+		tx_ch->path_possible[1] = RFNM_PATH_NULL;
+		tx_ch->power_range.min = -60;
+		tx_ch->power_range.max = 30;
+		tx_ch->dac_id = 0;
+		rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
+	}
 
 	rx_ch->freq_max = MHZ_TO_HZ(3500);
 	rx_ch->freq_min = MHZ_TO_HZ(10);
