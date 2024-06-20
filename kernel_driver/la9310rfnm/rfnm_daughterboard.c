@@ -79,6 +79,9 @@ EXPORT_SYMBOL(rfnm_dgb_reg_rx_ch);
 
 void rfnm_dgb_reg_tx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_tx_ch * tx_s) { 
 	int dgb_slot = dgb_dt->dgb_id;
+	if (dgb_slot != 0) {
+		return;
+	}
 	rfnm_dgb[dgb_slot] = dgb_dt;
 	tx_ch->dgb_id = dgb_slot;
 	tx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->tx_ch_cnt;
