@@ -62,6 +62,7 @@ void rfnm_dgb_reg_rx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch, 
 	rx_ch->dgb_id = dgb_slot;
 	rx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->rx_ch_cnt;
 	rx_ch->abs_id = abs_ch_cnt_rx++;
+	rx_ch->adc_id += dgb_slot * 2;
 	rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id] = rx_ch;
 	rfnm_dgb[dgb_slot]->rx_s[rx_ch->dgb_ch_id] = rx_s;
 	rfnm_dgb[dgb_slot]->rx_ch_cnt++;
@@ -78,6 +79,9 @@ EXPORT_SYMBOL(rfnm_dgb_reg_rx_ch);
 
 void rfnm_dgb_reg_tx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, struct rfnm_api_tx_ch * tx_s) { 
 	int dgb_slot = dgb_dt->dgb_id;
+	if (dgb_slot != 0) {
+		return;
+	}
 	rfnm_dgb[dgb_slot] = dgb_dt;
 	tx_ch->dgb_id = dgb_slot;
 	tx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->tx_ch_cnt;

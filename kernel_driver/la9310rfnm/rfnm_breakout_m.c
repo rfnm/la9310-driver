@@ -120,22 +120,30 @@ static int rfnm_breakout_probe(struct spi_device *spi)
 	struct rfnm_api_tx_ch *tx_ch, *tx_s;
 	struct rfnm_api_rx_ch *rx_ch[2], *rx_s[2];
 
-	tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+	if (dgb_id == 0) {
+		tx_ch = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+		tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
+		if (!tx_ch || !tx_s) {
+			return -ENOMEM;
+		}
+	}
+
 	rx_ch[0] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
 	rx_ch[1] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
-	tx_s = devm_kzalloc(dev, sizeof(struct rfnm_api_tx_ch), GFP_KERNEL);
 	rx_s[0] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
 	rx_s[1] = devm_kzalloc(dev, sizeof(struct rfnm_api_rx_ch), GFP_KERNEL);
 	
-	if(!tx_ch || !rx_ch[0] || !rx_ch[1] || !tx_s || !rx_s[0] || !rx_s[1]) {
+	if(!(rx_ch[0] && rx_ch[1] && rx_s[0] && rx_s[1])) {
 		return -ENOMEM;
 	}
 
-	tx_ch->freq_max = MHZ_TO_HZ(6300);
-	tx_ch->freq_min = MHZ_TO_HZ(0);
-	tx_ch->path_preferred = RFNM_PATH_SMA_B;
-	tx_ch->dac_id = 0;
-	rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
+	if (dgb_id == 0) {
+		tx_ch->freq_max = MHZ_TO_HZ(6300);
+		tx_ch->freq_min = MHZ_TO_HZ(0);
+		tx_ch->path_preferred = RFNM_PATH_SMA_B;
+		tx_ch->dac_id = 0;
+		rfnm_dgb_reg_tx_ch(dgb_dt, tx_ch, tx_s);
+	}
 
 	rx_ch[0]->freq_max = MHZ_TO_HZ(6300);
 	rx_ch[0]->freq_min = MHZ_TO_HZ(0);
