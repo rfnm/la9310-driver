@@ -67,6 +67,17 @@ void rfnm_dgb_reg_rx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch, 
 	rfnm_dgb[dgb_slot]->rx_s[rx_ch->dgb_ch_id] = rx_s;
 	rfnm_dgb[dgb_slot]->rx_ch_cnt++;
 
+	// re-assign abs_id
+	int i, q, d = 0;
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->rx_ch_cnt; q++) {
+			rfnm_dgb[i]->rx_ch[q]->abs_id = d++;
+		}
+	}
+
 #if 0
 	printk("rx abs_id %d dgb_ch_id %d dgb_id %d adc_id %d\n",
 				rfnm_dgb[dgb_slot]->rx_ch[rx_ch->dgb_ch_id]->abs_id, 
@@ -85,10 +96,21 @@ void rfnm_dgb_reg_tx_ch(struct rfnm_dgb *dgb_dt, struct rfnm_api_tx_ch * tx_ch, 
 	rfnm_dgb[dgb_slot] = dgb_dt;
 	tx_ch->dgb_id = dgb_slot;
 	tx_ch->dgb_ch_id = rfnm_dgb[dgb_slot]->tx_ch_cnt;
-	tx_ch->abs_id = abs_ch_cnt_tx++;
+	//tx_ch->abs_id = abs_ch_cnt_tx++;
 	rfnm_dgb[dgb_slot]->tx_ch[tx_ch->dgb_ch_id] = tx_ch;
 	rfnm_dgb[dgb_slot]->tx_s[tx_ch->dgb_ch_id] = tx_s;
 	rfnm_dgb[dgb_slot]->tx_ch_cnt++;
+
+	// re-assign abs_id
+	int i, q, d = 0;
+	for(i = 0; i < 2; i++) {
+		if(!rfnm_dgb[i]) {
+			continue;
+		}
+		for(q = 0; q < rfnm_dgb[i]->tx_ch_cnt; q++) {
+			rfnm_dgb[i]->tx_ch[q]->abs_id = d++;
+		}
+	}
 
 #if 0
 	printk("tx abs_id %d dgb_ch_id %d dgb_id %d dac_id %d\n",
