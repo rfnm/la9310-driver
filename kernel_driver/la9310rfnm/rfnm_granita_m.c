@@ -442,6 +442,14 @@ int rfnm_rx_ch_set(struct rfnm_dgb *dgb_dt, struct rfnm_api_rx_ch * rx_ch) {
 		gr_api_id = SIAPI_PATH_B;
 	}
 
+	if(dgb_dt->rx_s[!rx_ch->dgb_ch_id]->enable == RFNM_CH_ON) {
+		if(rx_ch->dgb_ch_id == 0) {
+			gr_api_id |= SIAPI_PATH_B;
+		} else {
+			gr_api_id |= SIAPI_PATH_A;
+		}
+	}
+	
 	uint64_t freq = rx_ch->freq;
 
 	if(rx_ch->freq < MHZ_TO_HZ(600)) {
