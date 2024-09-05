@@ -46,7 +46,7 @@ rfnm_lime-objs += ../../LimeSuiteNG/embedded/lms7002m/privates.o
 rfnm_breakout-objs := rfnm_breakout_m.o 
 
 # comment out to disable granita module
-# obj-m += rfnm_granita.o 
+obj-m += rfnm_granita.o 
 
 obj-m += rfnm_lime.o rfnm_breakout.o
 
