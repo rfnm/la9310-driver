@@ -32,8 +32,16 @@
 
 #include "drivers/usb/gadget/function/f_mass_storage.h"
 
+/* USB functions for functionMask parameter, RFNM function is always enabled*/
+#define FN_MSG 1
+#define FN_NCM 2
+
+
 /*-------------------------------------------------------------------------*/
 USB_GADGET_COMPOSITE_OPTIONS();
+
+static int functionMask = FN_MSG | FN_NCM; // Default, all functions
+module_param(functionMask, int, S_IRUSR | S_IRGRP | S_IROTH);
 
 static struct usb_device_descriptor rfnm_device_desc = {
 	.bLength =		sizeof rfnm_device_desc,
@@ -126,7 +134,9 @@ static int rfnm_do_config(struct usb_configuration *c)
 	c->cdev->os_desc_config = &os_desc_config;
 #endif
 	printk("Sending os driver data from callback\n");
+	printk("FunctionMask = %X\n", functionMask);
 
+	
 	f_rfnm = usb_get_function(fi_rfnm);
 	if (IS_ERR(f_rfnm))
 		return PTR_ERR(f_rfnm);
@@ -136,26 +146,29 @@ static int rfnm_do_config(struct usb_configuration *c)
 		goto put_func;
 
 	os_desc_config.interface[0] = f_rfnm;
+	
 
-#if 1
+	if (functionMask & FN_MSG)
+	{
+		f_msg = usb_get_function(fi_msg);
+		if (IS_ERR(f_msg))
+			return PTR_ERR(f_msg);
 
-	f_msg = usb_get_function(fi_msg);
-	if (IS_ERR(f_msg))
-		return PTR_ERR(f_msg);
+		ret = usb_add_function(c, f_msg);
+		if (ret)
+			goto put_func;
+	}
 
-	ret = usb_add_function(c, f_msg);
-	if (ret)
-		goto put_func;
-#endif
+	if (functionMask & FN_NCM)
+	{
+		f_ncm = usb_get_function(fi_ncm);
+		if (IS_ERR(f_ncm))
+			return PTR_ERR(f_ncm);
 
-
-	f_ncm = usb_get_function(fi_ncm);
-	if (IS_ERR(f_ncm))
-		return PTR_ERR(f_ncm);
-
-	ret = usb_add_function(c, f_ncm);
-	if (ret)
-		goto put_func;
+		ret = usb_add_function(c, f_ncm);
+		if (ret)
+			goto put_func;
+	}	
 
 	printk("callback ok\n");
 
@@ -242,33 +255,39 @@ static int rfnm_bind(struct usb_composite_dev *cdev)
 	if (IS_ERR(fi_rfnm))
 		return PTR_ERR(fi_rfnm);
 
-	fi_msg = usb_get_function_instance("mass_storage");
-	if (IS_ERR(fi_msg))
-		return PTR_ERR(fi_msg);
+	if (functionMask & FN_NCM)
+	{
+		fi_ncm = usb_get_function_instance("ncm");
+		if (IS_ERR(fi_ncm))
+			return PTR_ERR(fi_ncm);
+	}
 
-	fi_ncm = usb_get_function_instance("ncm");
-	if (IS_ERR(fi_ncm))
-		return PTR_ERR(fi_ncm);
+	if (functionMask & FN_MSG)
+	{
+		fi_msg = usb_get_function_instance("mass_storage");
+		if (IS_ERR(fi_msg))
+			return PTR_ERR(fi_msg);
 
-	fsg_config_from_params(&msg_config, &msg_mod_data, fsg_num_buffers);
-	msg_opts = fsg_opts_from_func_inst(fi_msg);
+		fsg_config_from_params(&msg_config, &msg_mod_data, fsg_num_buffers);
+		msg_opts = fsg_opts_from_func_inst(fi_msg);
 
-	msg_opts->no_configfs = true;
-	status = fsg_common_set_num_buffers(msg_opts->common, fsg_num_buffers);
-	if (status)
-		goto fail;
+		msg_opts->no_configfs = true;
+		status = fsg_common_set_num_buffers(msg_opts->common, fsg_num_buffers);
+		if (status)
+			goto fail;
 
-	status = fsg_common_set_cdev(msg_opts->common, cdev, msg_config.can_stall);
-	if (status)
-		goto fail;
+		status = fsg_common_set_cdev(msg_opts->common, cdev, msg_config.can_stall);
+		if (status)
+			goto fail;
 
-	fsg_common_set_sysfs(msg_opts->common, true);
-	status = fsg_common_create_luns(msg_opts->common, &msg_config);
-	if (status)
-		goto fail;
+		fsg_common_set_sysfs(msg_opts->common, true);
+		status = fsg_common_create_luns(msg_opts->common, &msg_config);
+		if (status)
+			goto fail;
 
-	fsg_common_set_inquiry_string(msg_opts->common, msg_config.vendor_name,
-				      msg_config.product_name);
+		fsg_common_set_inquiry_string(msg_opts->common, msg_config.vendor_name,
+						msg_config.product_name);
+	}
 
 	status = usb_string_ids_tab(cdev, strings_dev);
 	if (status < 0)

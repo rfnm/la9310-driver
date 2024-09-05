@@ -9,7 +9,7 @@ ifeq (${DEBUG}, 1)
 ccflags-y += -g -DDEBUG
 endif
 
-RFNM_BUILD_DIR = /home/davide
+#RFNM_BUILD_DIR = /home/davide
 
 ccflags-y += -I${LA9310_DRV_HEADER_DIR} -I${LA9310_COMMON_HEADERS} 
 ccflags-y += -I${RFNM_BUILD_DIR}/la9310-driver/LimeSuiteNG/embedded/include
