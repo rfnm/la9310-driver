@@ -563,19 +563,25 @@ static int tcp_data_tx_worker(void *arg)
                        (handles[nbuf] = rfnm_dequeue_local_buffer_rx_ref(&pkt)) != NULL) {
                     struct rfnm_rx_usb_buf *rb = (struct rfnm_rx_usb_buf *)pkt;
 
-                    /* r6-eth v2 framing: send the head + exactly the declared PACKED12
-                     * payload instead of a fixed full-size record. Fixed records floored
-                     * the host's RX latency at the 80-slot fill and made every partial/
-                     * early-ship lever TCP-dead; the TX direction always framed variably.
-                     * BREAKING wire change - deploy with the librfnm v2 reader (a v1 host
-                     * desyncs on its size check and drops the session loudly). */
-                    if (rb->fmt != RFNM_PACKET_FMT_PACKED12 ||
+                    /* r6-eth v2 framing: send the head + exactly the payload the head
+                     * declares - elem_cnt elements of rb->fmt (PACKED12 3 B, CS16 4 B).
+                     * Fixed records floored the host's RX latency at the 80-slot fill
+                     * and made every partial/early-ship lever TCP-dead; the TX direction
+                     * always framed variably. Shipping BOTH formats is the fix: the
+                     * old PACKED12-only filter silently starved every remote reader
+                     * whenever a local session owned the pool format - a fmt the reader
+                     * doesn't expect must cost wire bytes, never silence. Only a head
+                     * violating the protocol itself is dropped, and loudly. */
+                    if ((rb->fmt != RFNM_PACKET_FMT_PACKED12 && rb->fmt != RFNM_PACKET_FMT_CS16) ||
                         rb->elem_cnt == 0 || rb->elem_cnt > RFNM_USB_RX_PACKET_ELEM_CNT) {
+                        pr_err_ratelimited("rfnm_eth: dropping RX record with invalid head (fmt %u elem_cnt %u)\n",
+                                           rb->fmt, rb->elem_cnt);
                         rfnm_release_local_buffer_rx_ref(handles[nbuf]);
                         continue;
                     }
                     batch[nbuf].iov_base = pkt;
-                    batch[nbuf].iov_len = RFNM_USB_RX_PACKET_HEAD_SIZE + (size_t)rb->elem_cnt * 3;
+                    batch[nbuf].iov_len = RFNM_USB_RX_PACKET_HEAD_SIZE +
+                        (size_t)rb->elem_cnt * (rb->fmt == RFNM_PACKET_FMT_CS16 ? 4 : 3);
                     nbuf++;
                 }
                 if (nbuf == 0)

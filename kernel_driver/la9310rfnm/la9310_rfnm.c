@@ -542,13 +542,38 @@ module_param(rfnm_local_rx_culled, ullong, 0444);
 static void rfnm_local_rx_cull_stale(void);
 static unsigned long rfnm_usb_last_submit_jiffies;
 // payload encoding for local RX fill: the local chardev (librfnm on this SoC) wants
-// cs16 so nobody packs/unpacks on the same CPU; the in-kernel TCP server wants
-// packed12 for wire bandwidth. Follows the attached consumer (chardev open count).
+// cs16 so nobody packs/unpacks on the same CPU; the in-kernel TCP server prefers
+// packed12 for wire bandwidth. Keyed to the SESSION OWNER: each transport's SM-reset
+// entry stamps its preferred format (local ioctl -> CS16, eth/USB -> PACKED12), and
+// the last local close below restores the PACKED12 default. It used to follow the
+// chardev open COUNT, which made a merely-resident local client (the parked RTSA
+// daemon) starve every remote TCP reader forever; rfnm_eth now ships
+// either format, so a mismatch degrades to wire overhead, never to silence.
 uint32_t rfnm_local_rx_fmt = RFNM_PACKET_FMT_PACKED12;
 EXPORT_SYMBOL(rfnm_local_rx_fmt);   /* rfnm_qec gates its ring sampling on this: a local
                                      * CS16 session runs DCS/decim modes whose ring layout
                                      * violates QEC's full-rate assumptions (the
                                      * "runaway corrections" poisoning) */
+
+// Bring-up gate: session verbs (SM reset, samp rate, channel applies) are
+// REFUSED until the boot script declares the driver stack up - a client apply racing
+// daughterboard init corrupted the RX substrate for the whole boot (applies then
+// reported OK while no RX lane ever enabled). load_drivers/reload_some end with
+//   echo 1 > /sys/module/la9310rfnm/parameters/bringup_complete
+// The fallback timer below force-opens the gate (loudly) if the script dies mid-way,
+// so a broken boot stays remotely commandable instead of refusing forever.
+int rfnm_bringup_complete;
+module_param(rfnm_bringup_complete, int, 0644);
+MODULE_PARM_DESC(rfnm_bringup_complete, "0 = bring-up in progress, session verbs refused; set to 1 by the boot script");
+EXPORT_SYMBOL(rfnm_bringup_complete);
+static void rfnm_bringup_timeout_fn(struct work_struct *work)
+{
+	if (!READ_ONCE(rfnm_bringup_complete)) {
+		pr_warn("RFNM: bring-up gate released by 60 s timeout - the boot script never signaled bringup_complete; investigate load_drivers\n");
+		WRITE_ONCE(rfnm_bringup_complete, 1);
+	}
+}
+static DECLARE_DELAYED_WORK(rfnm_bringup_timeout_work, rfnm_bringup_timeout_fn);
 // bumped by rfnm_agc on every gain step; rfnm_qec restarts its settle window and drops the
 // in-flight accumulation on a change (LNA steps move the IQ imbalance mid-estimate)
 atomic_t rfnm_rx_gain_epoch = ATOMIC_INIT(0);
@@ -5137,7 +5162,8 @@ static int rfnm_dev_open(struct inode *inode, struct file *file)
     rfnm_data_ep_owner_tgid = tg;
     atomic_inc(&rfnm_data_ep_openers);
     spin_unlock(&rfnm_data_ep_owner_lock);
-    rfnm_local_rx_fmt = RFNM_PACKET_FMT_CS16;
+    // NO format latch here (deliberate): a bare open is not a session. The local
+    // transport's SM-reset ioctl claims CS16; release below restores the default.
     return 0;
 }
 static int rfnm_dev_release(struct inode *inode, struct file *file)
@@ -5476,6 +5502,9 @@ static int __init la9310_rfnm_init(void)
 
 	init_completion(&setup_done);
 
+	// bring-up-gate fallback: force-open after 60 s if the boot script never signals
+	schedule_delayed_work(&rfnm_bringup_timeout_work, msecs_to_jiffies(60000));
+
 	// The absolute-time owner starts with the module (valid flag defers real
 	// bookkeeping until the phytimer callback registers)
 	seqlock_init(&rfnm_phy64_lock);
@@ -5763,6 +5792,7 @@ printk("RFNM_USB_RX_PACKET_SIZE is %d\n", RFNM_USB_RX_PACKET_SIZE);
 
 static void  __exit la9310_rfnm_exit(void)
 {
+	cancel_delayed_work_sync(&rfnm_bringup_timeout_work);
 	del_timer_sync(&rfnm_phy64_timer);
 	int err = 0, i;
 	/*struct la9310_dev *la9310_dev = get_la9310_dev_byname("nlm0");

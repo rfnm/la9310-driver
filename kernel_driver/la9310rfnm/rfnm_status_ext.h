@@ -32,6 +32,7 @@ enum rfnm_reject_field {
 	RFNM_REJ_RATE,		// samp-rate / stream-planner stage
 	RFNM_REJ_CH_MISSING,	// apply bit named a channel this board doesn't have
 	RFNM_REJ_DEVICE,	// device-layer set failed (not a validation field)
+	RFNM_REJ_BOOT,		// bring-up incomplete, session verb refused (bring-up gate)
 };
 
 #endif	/* __RFNM_STATUS_EXT_H__ */

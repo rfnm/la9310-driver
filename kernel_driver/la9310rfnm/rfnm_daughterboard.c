@@ -281,7 +281,17 @@ EXPORT_SYMBOL(rfnm_populate_dev_set_res_ext);
 
 int rfnm_set_samp_rate_user(uint64_t freq, uint32_t cc) {
 	extern int rfnm_phy_gen_session_ok(void);
+	extern int rfnm_bringup_complete;
 
+	if(!READ_ONCE(rfnm_bringup_complete)) {
+		// bring-up gate: a rate set mid-bring-up reclocks the DCS and hard-resets the
+		// LA9310 under a half-initialized daughterboard stack - refuse honestly
+		pr_warn_ratelimited("RFNM: samp-rate set refused, radio bring-up incomplete\n");
+		rfnm_dev_work_res.cc_samp_rate = cc;
+		rfnm_dev_work_res.samp_rate_ecode = RFNM_API_PROBE_FAIL;
+		rfnm_dev_work_rej.samp_rate = RFNM_REJ_BOOT;
+		return -EAGAIN;
+	}
 	if(!rfnm_phy_gen_session_ok()) {
 		return -ENODEV;	// stale time generation - reopen before reconfiguring
 	}
@@ -768,7 +778,20 @@ DECLARE_WORK(rfnm_rx_chlist_work , &rfnm_apply_dev_rx_chlist_work);
 
 void rfnm_apply_dev_tx_chlist(struct rfnm_dev_tx_ch_list * r_chlist) {
 	extern int rfnm_phy_gen_session_ok(void);
+	extern int rfnm_bringup_complete;
 
+	if(!READ_ONCE(rfnm_bringup_complete)) {
+		int i;
+		pr_warn_ratelimited("RFNM: tx apply refused, radio bring-up incomplete\n");
+		for(i = 0; i < 8; i++) {
+			if(r_chlist->apply & (1U << i)) {
+				rfnm_dev_work_res.tx_ecodes[i] = RFNM_API_PROBE_FAIL;
+				rfnm_dev_work_rej.tx[i] = RFNM_REJ_BOOT;
+			}
+		}
+		rfnm_dev_work_res.cc_tx = r_chlist->cc;
+		return;
+	}
 	if(!rfnm_phy_gen_session_ok()) {
 		return;	// apply dropped (fire-and-forget path; refusal is dmesg-visible)
 	}
@@ -780,7 +803,20 @@ EXPORT_SYMBOL(rfnm_apply_dev_tx_chlist);
 
 void rfnm_apply_dev_rx_chlist(struct rfnm_dev_rx_ch_list * r_chlist) {
 	extern int rfnm_phy_gen_session_ok(void);
+	extern int rfnm_bringup_complete;
 
+	if(!READ_ONCE(rfnm_bringup_complete)) {
+		int i;
+		pr_warn_ratelimited("RFNM: rx apply refused, radio bring-up incomplete\n");
+		for(i = 0; i < 8; i++) {
+			if(r_chlist->apply & (1U << i)) {
+				rfnm_dev_work_res.rx_ecodes[i] = RFNM_API_PROBE_FAIL;
+				rfnm_dev_work_rej.rx[i] = RFNM_REJ_BOOT;
+			}
+		}
+		rfnm_dev_work_res.cc_rx = r_chlist->cc;
+		return;
+	}
 	if(!rfnm_phy_gen_session_ok()) {
 		return;	// apply dropped (fire-and-forget path; refusal is dmesg-visible)
 	}

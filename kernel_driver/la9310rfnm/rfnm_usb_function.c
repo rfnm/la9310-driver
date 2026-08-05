@@ -28,6 +28,10 @@
 
 #define RFNM_EP_CNT 4
 
+// la9310_rfnm.c: session-owner format keying + bring-up gate
+extern uint32_t rfnm_local_rx_fmt;
+extern int rfnm_bringup_complete;
+
 
 
 
@@ -988,7 +992,18 @@ unknown:
 	if((ctrl->bRequestType == 0xc0 && ctrl->wValue == RFNM_GET_SM_RESET)) {
 		req->length = w_length;
 		req->zero = 0;
-		ret = rfnm_schedule_restart_sm();
+		if(!READ_ONCE(rfnm_bringup_complete)) {
+			// bring-up gate: answer TIMEOUT (the existing failure vocabulary of this
+			// verb) instead of racing bring-up with a state-machine reset
+			pr_warn_ratelimited("RFNM: usb SM reset refused, radio bring-up incomplete\n");
+			ret = -EAGAIN;
+		} else {
+			ret = rfnm_schedule_restart_sm();
+			if(!ret) {
+				// a USB session owns the radio - wire-efficient format
+				WRITE_ONCE(rfnm_local_rx_fmt, RFNM_PACKET_FMT_PACKED12);
+			}
+		}
 		if(w_length > 0) {
 			((uint8_t *)req->buf)[0] = ret ? RFNM_API_TIMEOUT : RFNM_API_OK;
 		}
@@ -1240,7 +1255,18 @@ int rfnm_dev_process_udp_ctrl(uint32_t cmd, uint32_t *size, uint8_t *buf)
 			return 1;
 		case RFNM_GET_SM_RESET:
 			{
+				if(!READ_ONCE(rfnm_bringup_complete)) {
+					// bring-up gate: no response frame -> the TCP client's control
+					// receive times out and the open fails loudly ("Failed to
+					// reset state machine") instead of racing bring-up
+					pr_warn_ratelimited("RFNM: eth SM reset refused, radio bring-up incomplete\n");
+					return 0;
+				}
 				rfnm_restart_sm(1);
+				// a remote (eth) session owns the radio now - key the local
+				// pool to the wire-efficient format
+				WRITE_ONCE(rfnm_local_rx_fmt, RFNM_PACKET_FMT_PACKED12);
+				buf[0] = RFNM_API_OK;
 				*size = 1;
 			}
 			return 1;
@@ -1366,7 +1392,19 @@ static long rfnm_dev_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			}
 			return 0;
 		case RFNM_GET_SM_RESET:
-			return rfnm_restart_sm(1) ? -EBUSY : 0;
+			if(!READ_ONCE(rfnm_bringup_complete)) {
+				// bring-up gate: refuse the session-open verb until the boot script
+				// signals the stack is up; librfnm fails the open loudly
+				pr_warn_ratelimited("RFNM: local SM reset refused, radio bring-up incomplete\n");
+				return -EAGAIN;
+			}
+			if(rfnm_restart_sm(1)) {
+				return -EBUSY;
+			}
+			// the session owner keys the local-pool RX format - a LOCAL
+			// session wants CS16 (zero-copy, no on-SoC pack/unpack)
+			WRITE_ONCE(rfnm_local_rx_fmt, RFNM_PACKET_FMT_CS16);
+			return 0;
 		case RFNM_HARD_RESET_LA9310:
 			return rfnm_hard_reset_la9310(122880000);
 		case RFNM_GET_HARD_RESET_STATUS:
