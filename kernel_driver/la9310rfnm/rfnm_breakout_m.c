@@ -170,7 +170,14 @@ static int rfnm_breakout_probe(struct spi_device *spi)
 	dgb_dt->adc_iqswap[0] = 0;
 	dgb_dt->adc_iqswap[1] = 0;
 	rfnm_dgb_reg(dgb_dt);
-	
+
+	// Readiness gate: appd and tools/reboot_board.sh wait for a "<board> daughterboard
+	// initialized" line, which rfnm_lime_m.c, rfnm_yucca_m.c and rfnm_granita_m.c all
+	// print. Breakout printed nothing, so on breakout hardware the gate never fired and
+	// callers were left with no readiness signal at all. Printed after rfnm_dgb_reg() so
+	// it means bring-up is genuinely complete.
+	printk("RFNM: Breakout daughterboard initialized\n");
+
 	return 0;
 }
 
