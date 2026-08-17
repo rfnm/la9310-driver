@@ -13,4 +13,4 @@ endif
 
 obj-m := la9310shiva.o
 la9310shiva-objs := la9310_base.o  la9310_boot.o  la9310_pci.o la9310_sysfs.o la9310_irq_mux.o la9310_vspa_registry.o \
-		la9310_ipc.o la9310_main_vspa.o la9310_wdog.o
+		la9310_ipc.o la9310_main_vspa.o la9310_wdog.o la9310_modinfo.o

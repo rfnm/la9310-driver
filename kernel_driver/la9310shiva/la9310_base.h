@@ -16,6 +16,25 @@
 #define FIRMWARE_RTOS "la9310.bin"
 #define FIRMWARE_NAME_SIZE 100
 
+/*
+ * IQ Player interop (see la9310_create_iqplayer_iqflood_outbound()).
+ *
+ * EP address: the NXP iqplayer VSPA image hardcodes IQFLOOD_OUTBOUND_ADDR =
+ * 0xB0001000 (iqplayer_cwproj/include/vspa_dmem_proxy.h). NXP's own driver
+ * derives it as MSI window base + MSI window size, which is what we do here so
+ * the value stays tied to the same window map rather than being a magic number.
+ *
+ * Size: the REAL iqflood carveout only. RFNM_IQFLOOD_MEMSIZE (0xD000000,
+ * 208 MB) intentionally spans iqflood *and* the adjacent iqusb carveout
+ * (RFNM_IQFLOOD_USB_MEMADDR); the NXP host tools place the DMEM proxy at
+ * size-1024 and the RX FIFO at size/2, so reporting 208 MB puts them inside
+ * RFNM's USB buffer.
+ */
+#define LA9310_IQPLAYER_IQFLOOD_EP_ADDR \
+	(LA9310_EP_TOHOST_MSI_PHY_ADDR + PCIE_MSI_OB_SIZE)
+#define LA9310_IQPLAYER_IQFLOOD_SIZE \
+	(RFNM_IQFLOOD_USB_MEMADDR - RFNM_IQFLOOD_MEMADDR)
+
 /*Boot HandShake timeout in jiffies and retry count */
 #define LA9310_HOST_BOOT_HSHAKE_TIMEOUT		100
 #define LA9310_HOST_BOOT_HSHAKE_RETRIES		60
@@ -397,6 +416,8 @@ void la9310_create_ipc_hugepage_outbound(struct la9310_dev *la9310_dev,
 		uint64_t phys_addr, uint32_t size);
 extern int la9310_get_msi_irq(struct la9310_dev *, enum la9310_msi_id);
 struct la9310_dev *get_la9310_dev_byname(const char *name);
+int la9310_modinfo_init(struct la9310_dev *la9310_dev);
+int la9310_modinfo_exit(struct la9310_dev *la9310_dev);
 void la9310_init_ep_pcie_allocator(struct la9310_dev *la9310_dev);
 uint32_t la9310_alloc_ep_pcie_addr(struct la9310_dev *la9310_dev,
 				   uint32_t window_size);

@@ -315,6 +315,47 @@ la9310_create_rfnm_iqflood_outbound(struct la9310_dev *la9310_dev)
 	dev_dbg(la9310_dev->dev, "RFNM IQFLOOD Buff:0x%x[H]-0x%x[M],size %d\n",
 		 LA9310_IQFLOOD_PHYS_ADDR, RFNM_IQFLOOD_MEMADDR, RFNM_IQFLOOD_MEMSIZE);
 }
+
+/*
+ * Second view of the same iqflood carveout, at the EP address the NXP iqplayer
+ * VSPA image hardcodes: IQFLOOD_OUTBOUND_ADDR (iqplayer_cwproj/include/
+ * vspa_dmem_proxy.h) == 0xB0001000, i.e. MSI window base + PCIE_MSI_OB_SIZE,
+ * which is how NXP's own driver computes LA9310_IQFLOOD_PHYS_ADDR. This fork
+ * maps iqflood at 0xC0000000 instead, so without this window every iqplayer
+ * DMA (and any mailbox message carrying an EP address payload) targets an
+ * unmapped region and the iq_app TX/RX FIFOs never move data.
+ *
+ * Uses LA9310_V2H_OUTBOUND_WIN (OUTBOUND_3) - the same window NXP picks, and
+ * free in this fork (its only user, ocram, is #if 0'd below). The existing
+ * 0xC0000000 view on OUTBOUND_2 is left untouched, so the RFNM datapath is
+ * unaffected. Inert for the stock pairing: the RFNM image never emits an
+ * address in this range.
+ *
+ * Size is LA9310_IQPLAYER_IQFLOOD_SIZE - the *real* iqflood carveau, NOT
+ * RFNM_IQFLOOD_MEMSIZE (0xD000000 = 208 MB), which deliberately spans iqflood
+ * AND the adjacent iqusb carveout at RFNM_IQFLOOD_USB_MEMADDR. The NXP host
+ * tools derive buffer positions from the size modinfo reports (proxy at
+ * size-1024, RX FIFO at size/2), so 208 MB puts the proxy at 0xA33FFC00 inside
+ * RFNM's USB buffer and nothing works.
+ */
+void
+la9310_create_iqplayer_iqflood_outbound(struct la9310_dev *la9310_dev)
+{
+	struct la9310_mem_region_info *ccsr_region;
+
+	ccsr_region = &la9310_dev->mem_regions[LA9310_MEM_REGION_CCSR];
+
+	ls_pcie_iatu_outbound_set(ccsr_region->vaddr + PCIE_RHOM_DBI_BASE,
+			LA9310_V2H_OUTBOUND_WIN,
+			PCIE_ATU_TYPE_MEM,
+			LA9310_IQPLAYER_IQFLOOD_EP_ADDR,
+			RFNM_IQFLOOD_MEMADDR,
+			LA9310_IQPLAYER_IQFLOOD_SIZE);
+	dev_info(la9310_dev->dev,
+		 "iqplayer IQFLOOD Buff:0x%x[H]-0x%x[M],size %d (win %d)\n",
+		 LA9310_IQPLAYER_IQFLOOD_EP_ADDR, RFNM_IQFLOOD_MEMADDR,
+		 LA9310_IQPLAYER_IQFLOOD_SIZE, LA9310_V2H_OUTBOUND_WIN);
+}
 #if 0
 void
 la9310_create_rfnm_ocram_outbound(struct la9310_dev *la9310_dev)
@@ -739,6 +780,9 @@ la9310_base_probe(struct la9310_dev *la9310_dev)
 
 	la9310_create_rfnm_iqflood_outbound(la9310_dev);
 
+	/* extra EP view at 0xB0001000 for the NXP iqplayer image (see above) */
+	la9310_create_iqplayer_iqflood_outbound(la9310_dev);
+
 	//la9310_create_rfnm_ocram_outbound(la9310_dev);
 
 	rc = la9310_init_hif(la9310_dev);
@@ -855,6 +899,12 @@ la9310_base_probe(struct la9310_dev *la9310_dev)
 		}
 	}
 
+	/* Non-fatal: without the modinfo device only the NXP host tools lose
+	 * their address lookup; the radio stack itself never uses it.
+	 */
+	if (la9310_modinfo_init(la9310_dev))
+		pr_warn("%s: modinfo device unavailable\n", __func__);
+
 out:
 	if (rc)
 		la9310_base_deinit(la9310_dev, init_stage, i);
@@ -944,6 +994,7 @@ la9310_base_remove(struct la9310_dev *la9310_dev)
 	iounmap(host_region->vaddr);
 	host_region->vaddr = NULL;
 
+	la9310_modinfo_exit(la9310_dev);
 	la9310_subdrv_remove(la9310_dev);
 
 	la9310_clean_request_irq(la9310_dev, &la9310_dev->hif->irq_evt_regs);
